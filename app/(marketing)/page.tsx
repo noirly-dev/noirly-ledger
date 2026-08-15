@@ -144,7 +144,7 @@ export default async function LandingPage() {
             <div className="mt-8 flex max-w-sm flex-col gap-3">
               <NoirlyLoginButton redirectTo="/home" />
               <p className="font-mono text-[10px] tracking-[0.12em] uppercase text-panel-ink/50">
-                Continues with Noirly Identity
+                Opens Identity in a secure popup
               </p>
             </div>
           </section>

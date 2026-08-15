@@ -1,16 +1,35 @@
 "use client";
 
-import { signOutAction } from "@/src/features/auth/actions";
+import { useState } from "react";
+import { createPortal } from "react-dom";
+import { signOut } from "next-auth/react";
+import { LedgerBusyScreen } from "@/src/components/LedgerBusyScreen";
 
 export function SignOutButton() {
+  const [busy, setBusy] = useState(false);
+
+  async function onSignOut() {
+    setBusy(true);
+    try {
+      await signOut({ callbackUrl: "/login", redirect: true });
+    } catch {
+      window.location.assign("/login");
+    }
+  }
+
   return (
-    <form action={signOutAction}>
+    <>
+      {busy
+        ? createPortal(<LedgerBusyScreen label="Signing out" />, document.body)
+        : null}
       <button
-        className="w-full rounded-lg border border-nl-border px-3 py-1.5 text-left text-sm text-[#A3A3A3] hover:bg-nl-surface hover:text-[#F5F5F5]"
-        type="submit"
+        className="w-full cursor-pointer border border-dashed border-hairline px-3 py-1.5 text-left text-sm text-muted hover:bg-ink hover:text-canvas"
+        type="button"
+        onClick={() => void onSignOut()}
+        disabled={busy}
       >
         Sign out
       </button>
-    </form>
+    </>
   );
 }
