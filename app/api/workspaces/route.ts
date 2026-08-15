@@ -1,0 +1,32 @@
+import { z } from "zod";
+import { getLedgerProvider, jsonError, jsonOk } from "@/src/server/api/http";
+
+const createSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  baseCurrency: z.string().trim().length(3).default("USD"),
+});
+
+export async function GET() {
+  try {
+    const { sync } = await getLedgerProvider();
+    const workspaces = await sync.listWorkspaces();
+    return jsonOk({ workspaces });
+  } catch (error) {
+    return jsonError(error);
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = createSchema.parse(await request.json());
+    const { sync } = await getLedgerProvider();
+    const workspace = await sync.createWorkspace({
+      name: body.name,
+      kind: "team",
+      baseCurrency: body.baseCurrency.toUpperCase(),
+    });
+    return jsonOk({ workspace }, 201);
+  } catch (error) {
+    return jsonError(error);
+  }
+}

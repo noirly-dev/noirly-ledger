@@ -1,0 +1,201 @@
+"use client";
+
+import { useForm } from "react-hook-form";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { api } from "@/src/lib/api-client";
+import { qk } from "@/src/core/sync/query-keys";
+import { createTransactionBodySchema } from "@/src/core/schemas/ledger";
+import { COMMON_CURRENCIES } from "@/src/core/money";
+import { isoDate } from "@/src/core/budgets/period";
+import { Button } from "@/src/ui/Button";
+import { Dialog } from "@/src/ui/Dialog";
+import { Input, Label, Select, Textarea } from "@/src/ui/Field";
+import { useUIStore } from "@/src/stores/ui-store";
+
+type FormValues = {
+  type: "expense" | "income" | "transfer";
+  amountMajor: string;
+  currency: string;
+  categoryId: string;
+  date: string;
+  note: string;
+  frequency: "" | "daily" | "weekly" | "monthly" | "yearly";
+};
+
+type Props = {
+  workspaceId: string;
+  baseCurrency: string;
+};
+
+export function TransactionComposer({ workspaceId, baseCurrency }: Props) {
+  const open = useUIStore((s) => s.transactionComposerOpen);
+  const setOpen = useUIStore((s) => s.setTransactionComposerOpen);
+  const queryClient = useQueryClient();
+  const [error, setError] = useState<string | null>(null);
+  const [receipt, setReceipt] = useState<{ url: string; key: string } | null>(null);
+
+  const categories = useQuery({
+    queryKey: qk.categories(workspaceId),
+    queryFn: () => api.listCategories(workspaceId),
+    enabled: open,
+  });
+
+  const form = useForm<FormValues>({
+    defaultValues: {
+      type: "expense",
+      amountMajor: "",
+      currency: baseCurrency,
+      categoryId: "",
+      date: isoDate(new Date()),
+      note: "",
+      frequency: "",
+    },
+  });
+
+  const mutation = useMutation({
+    mutationFn: async (values: FormValues) => {
+      const parsed = createTransactionBodySchema.safeParse({
+        type: values.type,
+        amountMajor: values.amountMajor,
+        currency: values.currency,
+        categoryId: values.categoryId || null,
+        date: values.date,
+        note: values.note || null,
+        receiptUrl: receipt?.url ?? null,
+        receiptStorageKey: receipt?.key ?? null,
+        recurrence: values.frequency
+          ? { frequency: values.frequency, interval: 1 }
+          : null,
+      });
+      if (!parsed.success) {
+        throw new Error(parsed.error.issues[0]?.message ?? "Invalid transaction");
+      }
+      return api.createTransaction(workspaceId, parsed.data);
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: qk.transactions(workspaceId) }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard", workspaceId] }),
+        queryClient.invalidateQueries({ queryKey: qk.budgets(workspaceId) }),
+      ]);
+      form.reset({
+        type: "expense",
+        amountMajor: "",
+        currency: baseCurrency,
+        categoryId: "",
+        date: isoDate(new Date()),
+        note: "",
+        frequency: "",
+      });
+      setReceipt(null);
+      setOpen(false);
+    },
+    onError: (err) => setError(err instanceof Error ? err.message : "Failed"),
+  });
+
+  async function onFile(file: File | undefined) {
+    if (!file) return;
+    setError(null);
+    try {
+      const saved = await api.uploadReceipt(workspaceId, file);
+      setReceipt(saved);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed");
+    }
+  }
+
+  return (
+    <Dialog open={open} title="Add transaction" onClose={() => setOpen(false)}>
+      <form
+        className="space-y-3"
+        onSubmit={form.handleSubmit((values) => {
+          setError(null);
+          mutation.mutate(values);
+        })}
+      >
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label htmlFor="type">Type</Label>
+            <Select id="type" {...form.register("type")}>
+              <option value="expense">Expense</option>
+              <option value="income">Income</option>
+              <option value="transfer">Transfer</option>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="amount">Amount</Label>
+            <Input
+              id="amount"
+              inputMode="decimal"
+              className="font-mono tabular-nums"
+              placeholder="0.00"
+              {...form.register("amountMajor")}
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label htmlFor="currency">Currency</Label>
+            <Select id="currency" {...form.register("currency")}>
+              {COMMON_CURRENCIES.map((code) => (
+                <option key={code} value={code}>
+                  {code}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="date">Date</Label>
+            <Input id="date" type="date" className="font-mono" {...form.register("date")} />
+          </div>
+        </div>
+        <div>
+          <Label htmlFor="category">Category</Label>
+          <Select id="category" {...form.register("categoryId")}>
+            <option value="">Uncategorized</option>
+            {(categories.data?.categories ?? []).map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </Select>
+        </div>
+        <div>
+          <Label htmlFor="note">Note</Label>
+          <Textarea id="note" {...form.register("note")} />
+        </div>
+        <div>
+          <Label htmlFor="frequency">Recurring</Label>
+          <Select id="frequency" {...form.register("frequency")}>
+            <option value="">One-time</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+          </Select>
+        </div>
+        <div>
+          <Label htmlFor="receipt">Receipt (optional)</Label>
+          <Input
+            id="receipt"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,application/pdf"
+            onChange={(event) => onFile(event.target.files?.[0])}
+          />
+          {receipt ? (
+            <p className="mt-1 font-mono text-[11px] text-nl-positive">Receipt attached</p>
+          ) : null}
+        </div>
+        {error ? <p className="text-sm text-nl-negative">{error}</p> : null}
+        <div className="flex justify-end gap-2 pt-2">
+          <Button variant="ghost" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={mutation.isPending}>
+            {mutation.isPending ? "Saving…" : "Save"}
+          </Button>
+        </div>
+      </form>
+    </Dialog>
+  );
+}

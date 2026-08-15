@@ -1,0 +1,57 @@
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
+import { api } from "@/src/lib/api-client";
+import { qk } from "@/src/core/sync/query-keys";
+import { MoneyText } from "@/src/ui/MoneyText";
+
+type Props = { workspaceId: string };
+
+export function ExpenseList({ workspaceId }: Props) {
+  const expenses = useQuery({
+    queryKey: qk.transactions(workspaceId, { budgetPoolId: "team" }),
+    queryFn: () => api.listExpenses(workspaceId),
+  });
+  const pools = useQuery({
+    queryKey: qk.budgetPools(workspaceId),
+    queryFn: () => api.listPools(workspaceId),
+  });
+  const poolName = new Map((pools.data?.pools ?? []).map((p) => [p.id, p.name]));
+  const items = (expenses.data?.items ?? []).filter((txn) => txn.budgetPoolId);
+
+  return (
+    <main className="mx-auto w-full max-w-3xl px-6 py-8">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Expenses</h1>
+          <p className="mt-1 text-sm text-[#A3A3A3]">
+            Team expenses against budget pools.
+          </p>
+        </div>
+        <Link href={`/w/${workspaceId}/expenses/new`}>
+          <span className="inline-flex h-10 items-center rounded-lg bg-nl-accent px-4 text-sm font-medium text-[#0A0A0A]">
+            Submit expense
+          </span>
+        </Link>
+      </div>
+      <ul className="mt-6 divide-y divide-nl-border overflow-hidden rounded-xl border border-nl-border bg-nl-surface">
+        {items.map((txn) => (
+          <li key={txn.id} className="flex items-center justify-between gap-3 px-4 py-3">
+            <div>
+              <p className="text-sm text-[#F5F5F5]">{txn.note || "Expense"}</p>
+              <p className="font-mono text-[11px] text-[#737373]">
+                {txn.date} · {poolName.get(txn.budgetPoolId ?? "") ?? "Pool"} ·{" "}
+                {txn.isPosted ? "posted" : "pending"}
+              </p>
+            </div>
+            <MoneyText amountMinor={txn.amountMinor} currency={txn.currency} />
+          </li>
+        ))}
+      </ul>
+      {items.length === 0 && !expenses.isLoading ? (
+        <p className="mt-4 text-sm text-[#737373]">No team expenses yet.</p>
+      ) : null}
+    </main>
+  );
+}

@@ -1,0 +1,14 @@
+:root {
+  --nl-bg: #121212;
+  --nl-surface: #1e1e1e;
+  --nl-surface-hover: #242424;
+  --nl-border: #2a2a2a;
+  --nl-accent: #52d3fe;
+  --nl-accent-muted: #52d3fe33;
+  --nl-positive: #3ddc97;
+  --nl-negative: #d9a759;
+  --nl-warning: #d9a759;
+  --nl-text: #f5f5f5;
+  --nl-text-muted: #a3a3a3;
+  --nl-text-on-accent: #0a0a0a;
+}

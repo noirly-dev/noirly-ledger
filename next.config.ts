@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  transpilePackages: [
+    "@noirly-dev/realtime-client",
+    "@noirly-dev/realtime-shared",
+  ],
+  serverExternalPackages: ["@react-pdf/renderer", "nodemailer"],
 };
 
 export default nextConfig;

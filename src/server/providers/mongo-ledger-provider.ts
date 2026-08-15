@@ -1,0 +1,913 @@
+import { Types } from "mongoose";
+import type {
+  ApprovalRequest,
+  ApprovalView,
+  Budget,
+  BudgetPool,
+  Category,
+  CreateBudgetPoolInput,
+  CreateCategoryInput,
+  CreateTransactionInput,
+  CreateWorkspaceInput,
+  DateRangePreset,
+  DashboardSummary,
+  DecideApprovalInput,
+  FxRate,
+  InAppNotification,
+  LedgerSyncProvider,
+  ListTransactionsQuery,
+  MemberView,
+  SavingsGoal,
+  SubmitExpenseInput,
+  Transaction,
+  UpdateTransactionInput,
+  UpsertBudgetInput,
+  UpsertFxRateInput,
+  UpsertSavingsGoalInput,
+  Workspace,
+  WorkspaceWithRole,
+} from "@/src/core/sync/types";
+import type { ApprovalStatus, MemberRole } from "@/src/core/models/enums";
+import { convertToBaseMinor, FX_RATE_SCALE } from "@/src/core/money";
+import { dashboardRange, isoDate, periodWindow } from "@/src/core/budgets/period";
+import { withDb } from "@/src/server/db/mongodb";
+import {
+  ApprovalRequest as ApprovalModel,
+  Budget as BudgetModel,
+  BudgetPool as BudgetPoolModel,
+  Category as CategoryModel,
+  FxRate as FxRateModel,
+  LedgerUser,
+  Notification as NotificationModel,
+  SavingsGoal as SavingsGoalModel,
+  Transaction as TransactionModel,
+  Workspace as WorkspaceModel,
+  WorkspaceMember,
+} from "@/src/server/models";
+import {
+  mapApproval,
+  mapBudget,
+  mapBudgetPool,
+  mapCategory,
+  mapFxRate,
+  mapNotification,
+  mapSavingsGoal,
+  mapTransaction,
+  mapWorkspace,
+} from "@/src/server/mappers";
+import { ApiError } from "@/src/server/api/http";
+import { seedSystemCategories } from "@/src/server/categories/seed";
+import { listMembers, requireAction } from "@/src/server/workspace/members";
+import { publishMany } from "@/src/server/realtime/publish";
+import { notifyUsers } from "@/src/server/notifications/notify";
+import { maybeNotifyBudgetThreshold } from "@/src/server/notifications/budget-threshold";
+
+type ProviderContext = {
+  userId: string;
+};
+
+function oid(id: string) {
+  return new Types.ObjectId(id);
+}
+
+function optionalOid(id: string | null | undefined) {
+  return id ? oid(id) : null;
+}
+
+async function requireMembership(userId: string, workspaceId: string) {
+  const membership = await WorkspaceMember.findOne({
+    workspaceId: oid(workspaceId),
+    userId: oid(userId),
+  }).lean();
+  if (!membership) {
+    throw new ApiError(403, "forbidden", "Not a workspace member");
+  }
+  return membership;
+}
+
+async function requireWorkspace(userId: string, workspaceId: string) {
+  await requireMembership(userId, workspaceId);
+  const workspace = await WorkspaceModel.findById(workspaceId);
+  if (!workspace) {
+    throw new ApiError(404, "not_found", "Workspace not found");
+  }
+  return workspace;
+}
+
+async function toBaseAmount(input: {
+  workspaceId: Types.ObjectId;
+  amountMinor: number;
+  currency: string;
+  baseCurrency: string;
+  asOf: Date;
+}): Promise<number> {
+  if (input.currency === input.baseCurrency) {
+    return input.amountMinor;
+  }
+  const rate = await FxRateModel.findOne({
+    workspaceId: input.workspaceId,
+    currency: input.currency,
+    effectiveFrom: { $lte: input.asOf },
+  }).sort({ effectiveFrom: -1 });
+  if (!rate) {
+    throw new ApiError(
+      400,
+      "missing_fx_rate",
+      `Set an FX rate for ${input.currency} → ${input.baseCurrency} in Settings → Currency`,
+    );
+  }
+  return convertToBaseMinor(input.amountMinor, rate.rateToBaseScaled, FX_RATE_SCALE);
+}
+
+export function createMongoLedgerProvider(
+  ctx: ProviderContext,
+): LedgerSyncProvider {
+  return {
+    async listWorkspaces(): Promise<WorkspaceWithRole[]> {
+      return withDb(async () => {
+        const memberships = await WorkspaceMember.find({
+          userId: oid(ctx.userId),
+        }).lean();
+        const ids = memberships.map((m) => m.workspaceId);
+        const roleById = new Map(
+          memberships.map((m) => [m.workspaceId.toString(), m.role as MemberRole]),
+        );
+        const workspaces = await WorkspaceModel.find({ _id: { $in: ids } });
+        return workspaces.map((doc) => ({
+          ...mapWorkspace(doc),
+          role: roleById.get(doc._id.toString()) ?? "member",
+        }));
+      });
+    },
+
+    async getWorkspace(id: string): Promise<WorkspaceWithRole> {
+      return withDb(async () => {
+        const membership = await requireMembership(ctx.userId, id);
+        const workspace = await WorkspaceModel.findById(id);
+        if (!workspace) {
+          throw new ApiError(404, "not_found", "Workspace not found");
+        }
+        return {
+          ...mapWorkspace(workspace),
+          role: membership.role as MemberRole,
+        };
+      });
+    },
+
+    async createWorkspace(input: CreateWorkspaceInput): Promise<Workspace> {
+      return withDb(async () => {
+        const slugBase =
+          input.name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-|-$/g, "")
+            .slice(0, 40) || "team";
+        let slug = slugBase;
+        let n = 0;
+        while (await WorkspaceModel.exists({ slug })) {
+          n += 1;
+          slug = `${slugBase}-${n}`;
+        }
+
+        const workspace = await WorkspaceModel.create({
+          kind: "team",
+          name: input.name.trim(),
+          slug,
+          ownerUserId: oid(ctx.userId),
+          baseCurrency: input.baseCurrency.toUpperCase(),
+        });
+
+        await WorkspaceMember.create({
+          workspaceId: workspace._id,
+          userId: oid(ctx.userId),
+          role: "owner",
+        });
+        await seedSystemCategories(workspace._id);
+
+        return mapWorkspace(workspace);
+      });
+    },
+
+    async listCategories(workspaceId: string): Promise<Category[]> {
+      return withDb(async () => {
+        await requireMembership(ctx.userId, workspaceId);
+        const docs = await CategoryModel.find({
+          workspaceId: oid(workspaceId),
+          deletedAt: null,
+          archivedAt: null,
+        }).sort({ name: 1 });
+        return docs.map((doc) => mapCategory(doc));
+      });
+    },
+
+    async createCategory(input: CreateCategoryInput): Promise<Category> {
+      return withDb(async () => {
+        await requireMembership(ctx.userId, input.workspaceId);
+        const doc = await CategoryModel.create({
+          workspaceId: oid(input.workspaceId),
+          name: input.name.trim(),
+          icon: input.icon,
+          color: input.color,
+          isSystem: false,
+        });
+        return mapCategory(doc);
+      });
+    },
+
+    async updateCategory(id: string, patch: Partial<Category>): Promise<Category> {
+      return withDb(async () => {
+        const doc = await CategoryModel.findOne({ _id: oid(id), deletedAt: null });
+        if (!doc) throw new ApiError(404, "not_found", "Category not found");
+        await requireMembership(ctx.userId, doc.workspaceId.toString());
+        if (patch.name) doc.name = patch.name;
+        if (patch.icon) doc.icon = patch.icon;
+        if (patch.color) doc.color = patch.color;
+        await doc.save();
+        return mapCategory(doc);
+      });
+    },
+
+    async archiveCategory(id: string): Promise<void> {
+      return withDb(async () => {
+        const doc = await CategoryModel.findOne({ _id: oid(id), deletedAt: null });
+        if (!doc) throw new ApiError(404, "not_found", "Category not found");
+        await requireMembership(ctx.userId, doc.workspaceId.toString());
+        if (doc.isSystem) {
+          doc.archivedAt = new Date();
+        } else {
+          doc.deletedAt = new Date();
+        }
+        await doc.save();
+      });
+    },
+
+    async listTransactions(
+      query: ListTransactionsQuery,
+    ): Promise<{ items: Transaction[]; nextCursor?: string }> {
+      return withDb(async () => {
+        await requireMembership(ctx.userId, query.workspaceId);
+        const limit = Math.min(query.limit ?? 50, 500);
+        const filter: Record<string, unknown> = {
+          workspaceId: oid(query.workspaceId),
+          deletedAt: null,
+        };
+        if (query.categoryId) filter.categoryId = oid(query.categoryId);
+        if (query.budgetPoolId) filter.budgetPoolId = oid(query.budgetPoolId);
+        if (query.type) filter.type = query.type;
+        if (query.recurringOnly) {
+          filter.isRecurring = true;
+          filter.recurringParentId = null;
+        }
+        if (query.from || query.to) {
+          filter.date = {
+            ...(query.from ? { $gte: new Date(`${query.from}T00:00:00.000Z`) } : {}),
+            ...(query.to ? { $lte: new Date(`${query.to}T23:59:59.999Z`) } : {}),
+          };
+        }
+        if (query.cursor) {
+          filter._id = { $lt: oid(query.cursor) };
+        }
+        const docs = await TransactionModel.find(filter)
+          .sort({ date: -1, _id: -1 })
+          .limit(limit + 1);
+        const extra = docs.length > limit;
+        const page = extra ? docs.slice(0, limit) : docs;
+        return {
+          items: page.map((doc) => mapTransaction(doc)),
+          nextCursor: extra ? page[page.length - 1]?._id.toString() : undefined,
+        };
+      });
+    },
+
+    async getTransaction(id: string): Promise<Transaction> {
+      return withDb(async () => {
+        const doc = await TransactionModel.findOne({ _id: oid(id), deletedAt: null });
+        if (!doc) throw new ApiError(404, "not_found", "Transaction not found");
+        await requireMembership(ctx.userId, doc.workspaceId.toString());
+        return mapTransaction(doc);
+      });
+    },
+
+    async createTransaction(input: CreateTransactionInput): Promise<Transaction> {
+      return withDb(async () => {
+        const workspace = await requireWorkspace(ctx.userId, input.workspaceId);
+        const asOf = new Date(`${input.date}T12:00:00.000Z`);
+        const baseAmountMinor = await toBaseAmount({
+          workspaceId: workspace._id,
+          amountMinor: input.amountMinor,
+          currency: input.currency,
+          baseCurrency: workspace.baseCurrency,
+          asOf,
+        });
+        const recurrence = input.recurrence
+          ? {
+              frequency: input.recurrence.frequency,
+              interval: input.recurrence.interval,
+              until: input.recurrence.until ? new Date(input.recurrence.until) : null,
+            }
+          : null;
+        const doc = await TransactionModel.create({
+          workspaceId: workspace._id,
+          type: input.type,
+          amountMinor: input.amountMinor,
+          currency: input.currency,
+          baseAmountMinor,
+          categoryId: optionalOid(input.categoryId),
+          date: asOf,
+          note: input.note ?? null,
+          receiptUrl: input.receiptUrl ?? null,
+          receiptStorageKey: input.receiptStorageKey ?? null,
+          isRecurring: Boolean(recurrence),
+          recurrence,
+          createdById: oid(ctx.userId),
+          isPosted: true,
+        });
+        if (doc.type === "expense") {
+          await maybeNotifyBudgetThreshold({
+            workspaceId: workspace._id.toString(),
+            categoryId: input.categoryId ?? null,
+            addedExpenseMinor: baseAmountMinor,
+          });
+        }
+        return mapTransaction(doc);
+      });
+    },
+
+    async updateTransaction(
+      id: string,
+      patch: UpdateTransactionInput,
+    ): Promise<Transaction> {
+      return withDb(async () => {
+        const doc = await TransactionModel.findOne({ _id: oid(id), deletedAt: null });
+        if (!doc) throw new ApiError(404, "not_found", "Transaction not found");
+        const workspace = await requireWorkspace(ctx.userId, doc.workspaceId.toString());
+        if (patch.type) doc.type = patch.type;
+        if (patch.amountMinor != null) doc.amountMinor = patch.amountMinor;
+        if (patch.currency) doc.currency = patch.currency;
+        if (patch.categoryId !== undefined) doc.categoryId = optionalOid(patch.categoryId);
+        if (patch.date) doc.date = new Date(`${patch.date}T12:00:00.000Z`);
+        if (patch.note !== undefined) doc.note = patch.note;
+        if (patch.receiptUrl !== undefined) doc.receiptUrl = patch.receiptUrl;
+        if (patch.receiptStorageKey !== undefined) {
+          doc.receiptStorageKey = patch.receiptStorageKey;
+        }
+        if (patch.recurrence !== undefined) {
+          doc.recurrence = patch.recurrence
+            ? {
+                frequency: patch.recurrence.frequency,
+                interval: patch.recurrence.interval,
+                until: patch.recurrence.until
+                  ? new Date(patch.recurrence.until)
+                  : null,
+              }
+            : null;
+          doc.isRecurring = Boolean(patch.recurrence);
+        }
+        doc.baseAmountMinor = await toBaseAmount({
+          workspaceId: workspace._id,
+          amountMinor: doc.amountMinor,
+          currency: doc.currency,
+          baseCurrency: workspace.baseCurrency,
+          asOf: doc.date,
+        });
+        await doc.save();
+        return mapTransaction(doc);
+      });
+    },
+
+    async deleteTransaction(id: string): Promise<void> {
+      return withDb(async () => {
+        const doc = await TransactionModel.findOne({ _id: oid(id), deletedAt: null });
+        if (!doc) throw new ApiError(404, "not_found", "Transaction not found");
+        await requireMembership(ctx.userId, doc.workspaceId.toString());
+        doc.deletedAt = new Date();
+        await doc.save();
+      });
+    },
+
+    async listBudgets(workspaceId: string): Promise<Budget[]> {
+      return withDb(async () => {
+        await requireMembership(ctx.userId, workspaceId);
+        const docs = await BudgetModel.find({ workspaceId: oid(workspaceId) });
+        return docs.map((doc) => mapBudget(doc));
+      });
+    },
+
+    async upsertBudget(input: UpsertBudgetInput): Promise<Budget> {
+      return withDb(async () => {
+        const workspace = await requireWorkspace(ctx.userId, input.workspaceId);
+        const doc = await BudgetModel.findOneAndUpdate(
+          {
+            workspaceId: workspace._id,
+            categoryId: oid(input.categoryId),
+            period: input.period,
+            periodStart: input.periodStart ? new Date(input.periodStart) : null,
+          },
+          {
+            $set: {
+              periodEnd: input.periodEnd ? new Date(input.periodEnd) : null,
+              limitAmountMinor: input.limitAmountMinor,
+              currency: (input.currency ?? workspace.baseCurrency).toUpperCase(),
+              alertThresholdPct: input.alertThresholdPct ?? 80,
+            },
+            $setOnInsert: {
+              workspaceId: workspace._id,
+              categoryId: oid(input.categoryId),
+              period: input.period,
+              periodStart: input.periodStart ? new Date(input.periodStart) : null,
+            },
+          },
+          { upsert: true, returnDocument: "after" },
+        );
+        if (!doc) throw new ApiError(500, "internal_error", "Failed to save budget");
+        return mapBudget(doc);
+      });
+    },
+
+    async deleteBudget(id: string): Promise<void> {
+      return withDb(async () => {
+        const doc = await BudgetModel.findById(id);
+        if (!doc) throw new ApiError(404, "not_found", "Budget not found");
+        await requireMembership(ctx.userId, doc.workspaceId.toString());
+        await doc.deleteOne();
+      });
+    },
+
+    async listBudgetPools(workspaceId: string): Promise<BudgetPool[]> {
+      return withDb(async () => {
+        await requireMembership(ctx.userId, workspaceId);
+        const docs = await BudgetPoolModel.find({
+          workspaceId: oid(workspaceId),
+          archivedAt: null,
+        }).sort({ name: 1 });
+        return docs.map((doc) => mapBudgetPool(doc));
+      });
+    },
+
+    async getBudgetPool(id: string): Promise<BudgetPool> {
+      return withDb(async () => {
+        const doc = await BudgetPoolModel.findById(id);
+        if (!doc || doc.archivedAt) {
+          throw new ApiError(404, "not_found", "Budget pool not found");
+        }
+        await requireMembership(ctx.userId, doc.workspaceId.toString());
+        return mapBudgetPool(doc);
+      });
+    },
+
+    async createBudgetPool(input: CreateBudgetPoolInput): Promise<BudgetPool> {
+      return withDb(async () => {
+        const workspace = await requireWorkspace(ctx.userId, input.workspaceId);
+        await requireAction(ctx.userId, input.workspaceId, "pool.manage");
+        const doc = await BudgetPoolModel.create({
+          workspaceId: workspace._id,
+          name: input.name.trim(),
+          description: input.description ?? null,
+          limitAmountMinor: input.limitAmountMinor,
+          currency: (input.currency ?? workspace.baseCurrency).toUpperCase(),
+          currentSpendMinor: 0,
+          periodStart: input.periodStart ? new Date(input.periodStart) : null,
+          periodEnd: input.periodEnd ? new Date(input.periodEnd) : null,
+        });
+        return mapBudgetPool(doc);
+      });
+    },
+
+    async listSavingsGoals(workspaceId: string): Promise<SavingsGoal[]> {
+      return withDb(async () => {
+        await requireMembership(ctx.userId, workspaceId);
+        const docs = await SavingsGoalModel.find({ workspaceId: oid(workspaceId) }).sort({
+          createdAt: -1,
+        });
+        return docs.map((doc) => mapSavingsGoal(doc));
+      });
+    },
+
+    async upsertSavingsGoal(input: UpsertSavingsGoalInput): Promise<SavingsGoal> {
+      return withDb(async () => {
+        const workspace = await requireWorkspace(ctx.userId, input.workspaceId);
+        const current = input.currentAmountMinor ?? 0;
+        const doc = await SavingsGoalModel.create({
+          workspaceId: workspace._id,
+          name: input.name.trim(),
+          targetAmountMinor: input.targetAmountMinor,
+          currentAmountMinor: current,
+          currency: (input.currency ?? workspace.baseCurrency).toUpperCase(),
+          targetDate: input.targetDate ? new Date(input.targetDate) : null,
+          completedAt: current >= input.targetAmountMinor ? new Date() : null,
+        });
+        return mapSavingsGoal(doc);
+      });
+    },
+
+    async contributeToGoal(id: string, amountMinor: number): Promise<SavingsGoal> {
+      return withDb(async () => {
+        const doc = await SavingsGoalModel.findById(id);
+        if (!doc) throw new ApiError(404, "not_found", "Goal not found");
+        await requireMembership(ctx.userId, doc.workspaceId.toString());
+        const wasComplete = Boolean(doc.completedAt);
+        doc.currentAmountMinor += amountMinor;
+        if (doc.currentAmountMinor >= doc.targetAmountMinor && !doc.completedAt) {
+          doc.completedAt = new Date();
+        }
+        await doc.save();
+        if (!wasComplete && doc.completedAt) {
+          await notifyUsers({
+            userIds: [ctx.userId],
+            workspaceId: doc.workspaceId.toString(),
+            kind: "goal.reached",
+            title: "Savings goal reached",
+            body: `${doc.name} is complete.`,
+            href: "/goals",
+          });
+        }
+        return mapSavingsGoal(doc);
+      });
+    },
+
+    async deleteSavingsGoal(id: string): Promise<void> {
+      return withDb(async () => {
+        const doc = await SavingsGoalModel.findById(id);
+        if (!doc) throw new ApiError(404, "not_found", "Goal not found");
+        await requireMembership(ctx.userId, doc.workspaceId.toString());
+        await doc.deleteOne();
+      });
+    },
+
+    async listApprovals(query: {
+      workspaceId: string;
+      status?: ApprovalStatus[];
+    }): Promise<ApprovalView[]> {
+      return withDb(async () => {
+        await requireMembership(ctx.userId, query.workspaceId);
+        const filter: Record<string, unknown> = {
+          workspaceId: oid(query.workspaceId),
+        };
+        if (query.status?.length) filter.status = { $in: query.status };
+        const docs = await ApprovalModel.find(filter).sort({ createdAt: -1 }).limit(100);
+        const txns = await TransactionModel.find({
+          _id: { $in: docs.map((d) => d.transactionId) },
+        });
+        const users = await LedgerUser.find({
+          _id: { $in: docs.map((d) => d.submittedById) },
+        });
+        const txnById = new Map(txns.map((t) => [t._id.toString(), t]));
+        const userById = new Map(users.map((u) => [u._id.toString(), u]));
+        return docs.flatMap((doc) => {
+          const txn = txnById.get(doc.transactionId.toString());
+          if (!txn) return [];
+          const user = userById.get(doc.submittedById.toString());
+          return [
+            {
+              ...mapApproval(doc),
+              transaction: mapTransaction(txn),
+              submitterName: user?.displayName ?? "Unknown",
+            },
+          ];
+        });
+      });
+    },
+
+    async submitExpense(input: SubmitExpenseInput): Promise<{
+      transaction: Transaction;
+      approval: ApprovalRequest;
+    }> {
+      return withDb(async () => {
+        const workspace = await requireWorkspace(ctx.userId, input.workspaceId);
+        await requireAction(ctx.userId, input.workspaceId, "expense.submit");
+        const pool = await BudgetPoolModel.findOne({
+          _id: oid(input.budgetPoolId),
+          workspaceId: workspace._id,
+          archivedAt: null,
+        });
+        if (!pool) throw new ApiError(404, "not_found", "Budget pool not found");
+        const asOf = new Date(`${input.date}T12:00:00.000Z`);
+        const baseAmountMinor = await toBaseAmount({
+          workspaceId: workspace._id,
+          amountMinor: input.amountMinor,
+          currency: input.currency,
+          baseCurrency: workspace.baseCurrency,
+          asOf,
+        });
+        const txn = await TransactionModel.create({
+          workspaceId: workspace._id,
+          type: "expense",
+          amountMinor: input.amountMinor,
+          currency: input.currency,
+          baseAmountMinor,
+          categoryId: optionalOid(input.categoryId),
+          budgetPoolId: pool._id,
+          date: asOf,
+          note: input.note ?? null,
+          receiptUrl: input.receiptUrl ?? null,
+          receiptStorageKey: input.receiptStorageKey ?? null,
+          createdById: oid(ctx.userId),
+          isPosted: false,
+        });
+        const approval = await ApprovalModel.create({
+          workspaceId: workspace._id,
+          transactionId: txn._id,
+          budgetPoolId: pool._id,
+          submittedById: oid(ctx.userId),
+          status: "submitted",
+          submittedAt: new Date(),
+        });
+        txn.approvalRequestId = approval._id;
+        await txn.save();
+
+        const approvers = await WorkspaceMember.find({
+          workspaceId: workspace._id,
+          role: { $in: ["owner", "approver"] },
+        });
+        await notifyUsers({
+          userIds: approvers
+            .map((m) => m.userId.toString())
+            .filter((id) => id !== ctx.userId),
+          workspaceId: workspace._id.toString(),
+          kind: "approval.requested",
+          title: "Expense submitted",
+          body: `An expense needs review in ${pool.name}`,
+          href: `/w/${workspace._id.toString()}/approvals`,
+        });
+
+        const payload = {
+          approval: mapApproval(approval),
+          transaction: mapTransaction(txn),
+          poolId: pool._id.toString(),
+          version: Date.parse(approval.updatedAt.toISOString()),
+        };
+        await publishMany([
+          {
+            channel: `workspace:${workspace._id.toString()}:budgetpool:${pool._id.toString()}`,
+            event: "expense.submitted",
+            data: payload,
+          },
+          {
+            channel: `workspace:${workspace._id.toString()}:approvals`,
+            event: "expense.submitted",
+            data: payload,
+          },
+        ]);
+
+        return { transaction: mapTransaction(txn), approval: mapApproval(approval) };
+      });
+    },
+
+    async decideApproval(input: DecideApprovalInput): Promise<{
+      approval: ApprovalRequest;
+      transaction: Transaction;
+      pool: BudgetPool;
+    }> {
+      return withDb(async () => {
+        const existing = await ApprovalModel.findById(input.approvalId);
+        if (!existing) throw new ApiError(404, "not_found", "Approval not found");
+        await requireAction(ctx.userId, existing.workspaceId.toString(), "expense.decide");
+
+        const approval = await ApprovalModel.findOneAndUpdate(
+          { _id: existing._id, status: "submitted" },
+          {
+            $set: {
+              status: input.decision,
+              reviewedById: oid(ctx.userId),
+              reviewNote: input.reviewNote ?? null,
+              reviewedAt: new Date(),
+            },
+          },
+          { returnDocument: "after" },
+        );
+        if (!approval) {
+          throw new ApiError(409, "conflict", "This expense was already decided");
+        }
+
+        const txn = await TransactionModel.findById(approval.transactionId);
+        if (!txn) throw new ApiError(404, "not_found", "Transaction not found");
+        const pool = await BudgetPoolModel.findById(approval.budgetPoolId);
+        if (!pool) throw new ApiError(404, "not_found", "Budget pool not found");
+
+        if (input.decision === "approved") {
+          txn.isPosted = true;
+          await txn.save();
+          await BudgetPoolModel.updateOne(
+            { _id: pool._id },
+            { $inc: { currentSpendMinor: txn.baseAmountMinor } },
+          );
+          const fresh = await BudgetPoolModel.findById(pool._id);
+          if (fresh) {
+            pool.currentSpendMinor = fresh.currentSpendMinor;
+            pool.updatedAt = fresh.updatedAt;
+          }
+          await maybeNotifyBudgetThreshold({
+            workspaceId: approval.workspaceId.toString(),
+            categoryId: txn.categoryId ? txn.categoryId.toString() : null,
+            addedExpenseMinor: txn.baseAmountMinor,
+          });
+        }
+
+        await notifyUsers({
+          userIds: [approval.submittedById.toString()],
+          workspaceId: approval.workspaceId.toString(),
+          kind: "approval.decided",
+          title: input.decision === "approved" ? "Expense approved" : "Expense rejected",
+          body: input.reviewNote || `Your expense was ${input.decision}`,
+          href: `/w/${approval.workspaceId.toString()}/expenses`,
+        });
+
+        const mappedPool = mapBudgetPool(pool);
+        const payload = {
+          approval: mapApproval(approval),
+          transaction: mapTransaction(txn),
+          pool: mappedPool,
+          poolId: pool._id.toString(),
+          version: Date.parse(approval.updatedAt.toISOString()),
+        };
+        const event =
+          input.decision === "approved" ? "expense.approved" : "expense.rejected";
+        const wsId = approval.workspaceId.toString();
+        await publishMany([
+          {
+            channel: `workspace:${wsId}:budgetpool:${pool._id.toString()}`,
+            event,
+            data: payload,
+          },
+          {
+            channel: `workspace:${wsId}:approvals`,
+            event,
+            data: payload,
+          },
+          {
+            channel: `workspace:${wsId}:budgetpool:${pool._id.toString()}`,
+            event: "budget.updated",
+            data: { pool: mappedPool, version: Date.parse(pool.updatedAt.toISOString()) },
+          },
+        ]);
+
+        return {
+          approval: mapApproval(approval),
+          transaction: mapTransaction(txn),
+          pool: mappedPool,
+        };
+      });
+    },
+
+    async listMembers(workspaceId: string): Promise<MemberView[]> {
+      return withDb(async () => {
+        await requireMembership(ctx.userId, workspaceId);
+        return listMembers(workspaceId);
+      });
+    },
+
+    async listNotifications(): Promise<InAppNotification[]> {
+      return withDb(async () => {
+        const docs = await NotificationModel.find({ userId: oid(ctx.userId) })
+          .sort({ createdAt: -1 })
+          .limit(30);
+        return docs.map((doc) => mapNotification(doc));
+      });
+    },
+
+    async markNotificationRead(id: string): Promise<void> {
+      return withDb(async () => {
+        await NotificationModel.updateOne(
+          { _id: oid(id), userId: oid(ctx.userId) },
+          { $set: { readAt: new Date() } },
+        );
+      });
+    },
+
+    async listFxRates(workspaceId: string): Promise<FxRate[]> {
+      return withDb(async () => {
+        await requireMembership(ctx.userId, workspaceId);
+        const docs = await FxRateModel.find({ workspaceId: oid(workspaceId) }).sort({
+          currency: 1,
+          effectiveFrom: -1,
+        });
+        return docs.map((doc) => mapFxRate(doc));
+      });
+    },
+
+    async upsertFxRate(input: UpsertFxRateInput): Promise<FxRate> {
+      return withDb(async () => {
+        await requireMembership(ctx.userId, input.workspaceId);
+        const effectiveFrom = new Date(`${input.effectiveFrom}T00:00:00.000Z`);
+        const doc = await FxRateModel.findOneAndUpdate(
+          {
+            workspaceId: oid(input.workspaceId),
+            currency: input.currency,
+            effectiveFrom,
+          },
+          {
+            $set: {
+              rateToBaseScaled: input.rateToBaseScaled,
+              createdById: oid(ctx.userId),
+            },
+            $setOnInsert: {
+              workspaceId: oid(input.workspaceId),
+              currency: input.currency,
+              effectiveFrom,
+            },
+          },
+          { upsert: true, returnDocument: "after" },
+        );
+        if (!doc) throw new ApiError(500, "internal_error", "Failed to save FX rate");
+        return mapFxRate(doc);
+      });
+    },
+
+    async getDashboardSummary(
+      workspaceId: string,
+      preset: DateRangePreset,
+    ): Promise<DashboardSummary> {
+      return withDb(async () => {
+        const workspace = await requireWorkspace(ctx.userId, workspaceId);
+        const range = dashboardRange(preset);
+        const [txns, categories, budgets] = await Promise.all([
+          TransactionModel.find({
+            workspaceId: workspace._id,
+            deletedAt: null,
+            isPosted: true,
+            date: { $gte: range.from, $lte: range.to },
+          }),
+          CategoryModel.find({ workspaceId: workspace._id, deletedAt: null }),
+          BudgetModel.find({ workspaceId: workspace._id }),
+        ]);
+
+        const categoryById = new Map(categories.map((c) => [c._id.toString(), c]));
+        let incomeMinor = 0;
+        let expenseMinor = 0;
+        const byCategoryMap = new Map<
+          string,
+          { categoryId: string | null; name: string; color: string; amountMinor: number }
+        >();
+        const overTimeMap = new Map<string, { expenseMinor: number; incomeMinor: number }>();
+
+        for (const txn of txns) {
+          const day = isoDate(txn.date);
+          const bucket = overTimeMap.get(day) ?? { expenseMinor: 0, incomeMinor: 0 };
+          if (txn.type === "income") {
+            incomeMinor += txn.baseAmountMinor;
+            bucket.incomeMinor += txn.baseAmountMinor;
+          } else if (txn.type === "expense") {
+            expenseMinor += txn.baseAmountMinor;
+            bucket.expenseMinor += txn.baseAmountMinor;
+            const key = txn.categoryId?.toString() ?? "uncategorized";
+            const category = txn.categoryId
+              ? categoryById.get(txn.categoryId.toString())
+              : null;
+            const current = byCategoryMap.get(key) ?? {
+              categoryId: txn.categoryId?.toString() ?? null,
+              name: category?.name ?? "Uncategorized",
+              color: category?.color ?? "#737373",
+              amountMinor: 0,
+            };
+            current.amountMinor += txn.baseAmountMinor;
+            byCategoryMap.set(key, current);
+          }
+          overTimeMap.set(day, bucket);
+        }
+
+        const budgetRows = await Promise.all(
+          budgets.map(async (budget) => {
+            const window = periodWindow(budget.period, new Date(), {
+              start: budget.periodStart ? isoDate(budget.periodStart) : null,
+              end: budget.periodEnd ? isoDate(budget.periodEnd) : null,
+            });
+            const spent = await TransactionModel.aggregate<{ total: number }>([
+              {
+                $match: {
+                  workspaceId: workspace._id,
+                  categoryId: budget.categoryId,
+                  type: "expense",
+                  isPosted: true,
+                  deletedAt: null,
+                  date: { $gte: window.from, $lte: window.to },
+                },
+              },
+              { $group: { _id: null, total: { $sum: "$baseAmountMinor" } } },
+            ]);
+            const spentMinor = spent[0]?.total ?? 0;
+            return {
+              budget: mapBudget(budget),
+              spentMinor,
+              remainingMinor: budget.limitAmountMinor - spentMinor,
+            };
+          }),
+        );
+
+        return {
+          baseCurrency: workspace.baseCurrency,
+          range: { from: isoDate(range.from), to: isoDate(range.to) },
+          incomeMinor,
+          expenseMinor,
+          netMinor: incomeMinor - expenseMinor,
+          byCategory: [...byCategoryMap.values()].sort(
+            (a, b) => b.amountMinor - a.amountMinor,
+          ),
+          overTime: [...overTimeMap.entries()]
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([date, value]) => ({ date, ...value })),
+          budgets: budgetRows,
+        };
+      });
+    },
+  };
+}

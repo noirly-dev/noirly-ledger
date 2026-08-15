@@ -1,0 +1,124 @@
+import { z } from "zod";
+import {
+  BUDGET_PERIODS,
+  RECURRENCE_FREQUENCIES,
+  TRANSACTION_TYPES,
+} from "@/src/core/models/enums";
+
+export const currencyCode = z
+  .string()
+  .trim()
+  .length(3)
+  .transform((value) => value.toUpperCase());
+
+export const amountMajorSchema = z
+  .string()
+  .trim()
+  .regex(/^\d+(\.\d{1,2})?$/, "Enter a valid amount");
+
+export const recurrenceSchema = z.object({
+  frequency: z.enum(RECURRENCE_FREQUENCIES),
+  interval: z.number().int().min(1).max(52).default(1),
+  until: z.string().nullable().optional(),
+});
+
+export const createTransactionBodySchema = z.object({
+  type: z.enum(TRANSACTION_TYPES),
+  amountMajor: amountMajorSchema,
+  currency: currencyCode,
+  categoryId: z.string().min(1).nullable().optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  note: z.string().trim().max(2000).nullable().optional(),
+  receiptUrl: z.string().url().nullable().optional(),
+  receiptStorageKey: z.string().min(1).nullable().optional(),
+  recurrence: recurrenceSchema.nullable().optional(),
+});
+
+export const updateTransactionBodySchema = createTransactionBodySchema
+  .partial()
+  .refine((value) => Object.keys(value).length > 0, {
+    message: "At least one field is required",
+  });
+
+export const createCategoryBodySchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  icon: z.string().trim().min(1).max(40).default("circle"),
+  color: z
+    .string()
+    .trim()
+    .regex(/^#([0-9a-fA-F]{6})$/)
+    .default("#52D3FE"),
+});
+
+export const updateCategoryBodySchema = createCategoryBodySchema.partial();
+
+export const upsertBudgetBodySchema = z.object({
+  categoryId: z.string().min(1),
+  period: z.enum(BUDGET_PERIODS),
+  periodStart: z.string().nullable().optional(),
+  periodEnd: z.string().nullable().optional(),
+  limitMajor: amountMajorSchema,
+  currency: currencyCode.optional(),
+  alertThresholdPct: z.number().min(1).max(100).default(80),
+});
+
+export const upsertGoalBodySchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  targetMajor: amountMajorSchema,
+  currentMajor: amountMajorSchema.optional(),
+  currency: currencyCode.optional(),
+  targetDate: z.string().nullable().optional(),
+});
+
+export const contributeGoalBodySchema = z.object({
+  amountMajor: amountMajorSchema,
+});
+
+export const upsertFxRateBodySchema = z.object({
+  currency: currencyCode,
+  rate: z.string().trim().regex(/^\d+(\.\d+)?$/, "Enter a valid rate"),
+  effectiveFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+});
+
+export const exportBodySchema = z.object({
+  format: z.enum(["csv", "pdf"]),
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  template: z.enum(["summary", "pool", "approvals"]).default("summary"),
+  budgetPoolId: z.string().min(1).nullable().optional(),
+});
+
+export const dashboardQuerySchema = z.object({
+  range: z.enum(["7d", "30d", "90d", "mtd"]).default("mtd"),
+});
+
+export const createPoolBodySchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  description: z.string().trim().max(500).nullable().optional(),
+  limitMajor: amountMajorSchema,
+  currency: currencyCode.optional(),
+});
+
+export const submitExpenseBodySchema = z.object({
+  budgetPoolId: z.string().min(1),
+  amountMajor: amountMajorSchema,
+  currency: currencyCode,
+  categoryId: z.string().min(1).nullable().optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  note: z.string().trim().max(2000).nullable().optional(),
+  receiptUrl: z.string().nullable().optional(),
+  receiptStorageKey: z.string().nullable().optional(),
+});
+
+export const decideApprovalBodySchema = z.object({
+  decision: z.enum(["approved", "rejected"]),
+  reviewNote: z.string().trim().max(2000).nullable().optional(),
+});
+
+export const createInviteBodySchema = z.object({
+  role: z.enum(["approver", "member"]),
+});
+
+export const updateMemberBodySchema = z.object({
+  role: z.enum(["owner", "approver", "member"]),
+});
