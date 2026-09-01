@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, type ReactNode } from "react";
@@ -151,14 +150,9 @@ export function AppShell({ user, workspaces, children }: Props) {
           brand: (
             <SidebarBrand
               logo={
-                <Image
-                  src="/logo-dark.png"
-                  alt=""
-                  width={32}
-                  height={32}
-                  className="h-8 w-8"
-                  priority
-                />
+                <span className="font-mono text-xs font-bold tracking-[0.08em]">
+                  NL
+                </span>
               }
               title="Noirly Ledger"
               subtitle="Finance"
