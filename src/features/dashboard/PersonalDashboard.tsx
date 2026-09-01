@@ -21,7 +21,7 @@ import { formatMinorToMajor } from "@/src/core/money";
 import { MoneyText } from "@/src/components/MoneyText";
 import { ProgressBar } from "@/src/components/ProgressBar";
 import { AccessibleChart } from "@/src/components/AccessibleChart";
-import { Button } from "@noirly-dev/ui";
+import { Button, PageContainer } from "@noirly-dev/ui";
 import { useUIStore } from "@/src/stores/ui-store";
 import { useState } from "react";
 import type { DateRangePreset } from "@/src/core/sync/types";
@@ -52,7 +52,7 @@ export function PersonalDashboard({ workspaceId, baseCurrency, displayName }: Pr
   const summary = dash.data?.summary;
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-6 py-8">
+    <PageContainer size="lg">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="font-mono text-[11px] tracking-[0.2em] text-[var(--accent)]">PERSONAL</p>
@@ -208,7 +208,7 @@ export function PersonalDashboard({ workspaceId, baseCurrency, displayName }: Pr
           })}
         </ul>
       </section>
-    </main>
+    </PageContainer>
   );
 }
 

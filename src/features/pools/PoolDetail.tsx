@@ -1,5 +1,6 @@
 "use client";
 
+import { PageContainer } from "@noirly-dev/ui";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { api } from "@/src/lib/api-client";
@@ -27,7 +28,7 @@ export function PoolDetail({ workspaceId, poolId }: Props) {
   const items = expensesQuery.data?.items ?? [];
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-6 py-8">
+    <PageContainer size="md">
       <p className="font-mono text-[11px] tracking-[0.2em] text-[var(--accent)]">POOL</p>
       <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -72,6 +73,6 @@ export function PoolDetail({ workspaceId, poolId }: Props) {
       {items.length === 0 && !expensesQuery.isLoading ? (
         <p className="mt-4 text-sm text-[var(--muted-foreground)]">No expenses against this pool yet.</p>
       ) : null}
-    </main>
+    </PageContainer>
   );
 }

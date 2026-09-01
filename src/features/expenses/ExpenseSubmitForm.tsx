@@ -9,7 +9,7 @@ import { qk } from "@/src/core/sync/query-keys";
 import { submitExpenseBodySchema } from "@/src/core/schemas/ledger";
 import { COMMON_CURRENCIES } from "@/src/core/money";
 import { isoDate } from "@/src/core/budgets/period";
-import { Button } from "@noirly-dev/ui";
+import { Button, PageContainer } from "@noirly-dev/ui";
 import { Input, Label, Textarea } from "@noirly-dev/ui";
 import { Select } from "@/src/components/Select";
 
@@ -98,7 +98,7 @@ export function ExpenseSubmitForm({
   }
 
   return (
-    <main className="mx-auto w-full max-w-lg px-6 py-8">
+    <PageContainer size="sm">
       <p className="font-mono text-[11px] tracking-[0.2em] text-[var(--accent)]">EXPENSE</p>
       <h1 className="mt-2 text-2xl font-semibold tracking-tight">Submit expense</h1>
       <p className="mt-1 text-sm text-[var(--muted-foreground)]">
@@ -183,6 +183,6 @@ export function ExpenseSubmitForm({
           {mutation.isPending ? "Submitting…" : "Submit for approval"}
         </Button>
       </form>
-    </main>
+    </PageContainer>
   );
 }

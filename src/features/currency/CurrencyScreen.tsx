@@ -5,7 +5,7 @@ import { useState } from "react";
 import { api } from "@/src/lib/api-client";
 import { qk } from "@/src/core/sync/query-keys";
 import { COMMON_CURRENCIES, formatScaledRate } from "@/src/core/money";
-import { Button } from "@noirly-dev/ui";
+import { Button, PageContainer } from "@noirly-dev/ui";
 import { Input, Label } from "@noirly-dev/ui";
 import { Select } from "@/src/components/Select";
 import { isoDate } from "@/src/core/budgets/period";
@@ -33,7 +33,7 @@ export function CurrencyScreen({ workspaceId, baseCurrency }: Props) {
   });
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-6 py-8">
+    <PageContainer size="md">
       <h1 className="text-2xl font-semibold tracking-tight">Currency</h1>
       <p className="mt-2 text-sm text-[var(--muted-foreground)]">
         Base currency is{" "}
@@ -81,6 +81,6 @@ export function CurrencyScreen({ workspaceId, baseCurrency }: Props) {
           </li>
         ))}
       </ul>
-    </main>
+    </PageContainer>
   );
 }

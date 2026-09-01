@@ -7,7 +7,7 @@ import { api } from "@/src/lib/api-client";
 import { qk } from "@/src/core/sync/query-keys";
 import { useCan } from "@/src/features/workspace/WorkspaceRoleContext";
 import { PoolMeter } from "@/src/features/pools/PoolMeter";
-import { Button } from "@noirly-dev/ui";
+import { Button, PageContainer } from "@noirly-dev/ui";
 import { Input, Label, Textarea } from "@noirly-dev/ui";
 
 type Props = {
@@ -46,7 +46,7 @@ export function PoolList({ workspaceId, baseCurrency }: Props) {
   const pools = poolsQuery.data?.pools ?? [];
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-6 py-8">
+    <PageContainer size="md">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Budget pools</h1>
@@ -136,6 +136,6 @@ export function PoolList({ workspaceId, baseCurrency }: Props) {
       {!poolsQuery.isLoading && pools.length === 0 ? (
         <p className="mt-6 text-sm text-[var(--muted-foreground)]">No pools yet.</p>
       ) : null}
-    </main>
+    </PageContainer>
   );
 }

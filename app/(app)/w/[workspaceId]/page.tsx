@@ -1,3 +1,4 @@
+import { PageContainer } from "@noirly-dev/ui";
 import Link from "next/link";
 import { getLedgerProvider } from "@/src/server/api/http";
 import { can } from "@/src/core/permissions/can";
@@ -14,7 +15,7 @@ export default async function WorkspaceHomePage({
   const canDecide = can(workspace.role, "expense.decide");
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-6 py-8">
+    <PageContainer size="lg">
       <p className="font-mono text-[11px] tracking-[0.2em] text-[var(--accent)]">
         TEAM · {workspace.role.toUpperCase()}
       </p>
@@ -45,6 +46,6 @@ export default async function WorkspaceHomePage({
       </div>
 
       <PoolListPreview workspaceId={workspaceId} />
-    </main>
+    </PageContainer>
   );
 }

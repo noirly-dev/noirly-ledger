@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api } from "@/src/lib/api-client";
 import { qk } from "@/src/core/sync/query-keys";
-import { Button } from "@noirly-dev/ui";
+import { Button, PageContainer } from "@noirly-dev/ui";
 import { Input, Label } from "@noirly-dev/ui";
 import { ProgressBar } from "@/src/components/ProgressBar";
 import { MoneyText } from "@/src/components/MoneyText";
@@ -48,7 +48,7 @@ export function GoalsScreen({ workspaceId, baseCurrency }: Props) {
   });
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-6 py-8">
+    <PageContainer size="md">
       <h1 className="text-2xl font-semibold tracking-tight">Savings goals</h1>
       <form
         className="mt-6 grid gap-3 surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-4 sm:grid-cols-3"
@@ -134,6 +134,6 @@ export function GoalsScreen({ workspaceId, baseCurrency }: Props) {
           );
         })}
       </ul>
-    </main>
+    </PageContainer>
   );
 }

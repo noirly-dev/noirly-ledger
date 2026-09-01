@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/src/lib/api-client";
 import { qk } from "@/src/core/sync/query-keys";
 import { isoDate } from "@/src/core/budgets/period";
-import { Button } from "@noirly-dev/ui";
+import { Button, PageContainer } from "@noirly-dev/ui";
 import { Label } from "@noirly-dev/ui";
 import { Select } from "@/src/components/Select";
 
@@ -61,7 +61,7 @@ export function ReportBuilder({ workspaceId, kind }: Props) {
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-6 py-8">
+    <PageContainer size="md">
       <h1 className="text-2xl font-semibold tracking-tight">Reports</h1>
       <p className="mt-2 text-sm text-[var(--muted-foreground)]">
         Export a period as CSV or PDF. Amounts are decimal strings with a currency code.
@@ -153,6 +153,6 @@ export function ReportBuilder({ workspaceId, kind }: Props) {
           {pending ? "Exporting…" : "Export"}
         </Button>
       </form>
-    </main>
+    </PageContainer>
   );
 }

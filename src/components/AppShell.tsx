@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import {
   AppShell as UIShell,
+  SidebarBrand,
   cn,
   type AppNavItem,
 } from "@noirly-dev/ui";
@@ -41,27 +42,6 @@ type Props = {
   workspaces: WorkspaceWithRole[];
   children: ReactNode;
 };
-
-function SidebarBrand() {
-  return (
-    <div className="flex items-center gap-3.5">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent-soft)] p-1">
-        <Image
-          src="/logo-dark.png"
-          alt=""
-          width={40}
-          height={40}
-          className="h-9 w-9"
-          priority
-        />
-      </div>
-      <div>
-        <p className="font-display text-sm font-semibold">Noirly Ledger</p>
-        <p className="text-xs text-[var(--muted-foreground)]">Finance</p>
-      </div>
-    </div>
-  );
-}
 
 function workspaceLinkClass(active: boolean) {
   return cn(
@@ -169,8 +149,23 @@ export function AppShell({ user, workspaces, children }: Props) {
       <UIShell
         sidebar={{
           brand: (
+            <SidebarBrand
+              logo={
+                <Image
+                  src="/logo-dark.png"
+                  alt=""
+                  width={32}
+                  height={32}
+                  className="h-8 w-8"
+                  priority
+                />
+              }
+              title="Noirly Ledger"
+              subtitle="Finance"
+            />
+          ),
+          children: (
             <div className="space-y-4">
-              <SidebarBrand />
               <button
                 type="button"
                 onClick={() => useUIStore.getState().setCommandPaletteOpen(true)}
@@ -225,7 +220,7 @@ export function AppShell({ user, workspaces, children }: Props) {
           ),
           items,
           footer: (
-            <div className="space-y-3 border-t border-[var(--hairline)] pt-4">
+            <div className="space-y-3">
               <div className="hidden md:block">
                 <NotificationBell />
               </div>

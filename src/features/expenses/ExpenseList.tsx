@@ -1,5 +1,6 @@
 "use client";
 
+import { PageContainer } from "@noirly-dev/ui";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { api } from "@/src/lib/api-client";
@@ -21,7 +22,7 @@ export function ExpenseList({ workspaceId }: Props) {
   const items = (expenses.data?.items ?? []).filter((txn) => txn.budgetPoolId);
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-6 py-8">
+    <PageContainer size="md">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Expenses</h1>
@@ -52,6 +53,6 @@ export function ExpenseList({ workspaceId }: Props) {
       {items.length === 0 && !expenses.isLoading ? (
         <p className="mt-4 text-sm text-[var(--muted-foreground)]">No team expenses yet.</p>
       ) : null}
-    </main>
+    </PageContainer>
   );
 }

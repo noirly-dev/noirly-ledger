@@ -6,7 +6,7 @@ import { api } from "@/src/lib/api-client";
 import { qk } from "@/src/core/sync/query-keys";
 import { useCan } from "@/src/features/workspace/WorkspaceRoleContext";
 import type { ApprovalView, BudgetPool } from "@/src/core/sync/types";
-import { Button } from "@noirly-dev/ui";
+import { Button, PageContainer } from "@noirly-dev/ui";
 import { MoneyText } from "@/src/components/MoneyText";
 
 type Props = { workspaceId: string };
@@ -84,7 +84,7 @@ export function ApprovalsInbox({ workspaceId }: Props) {
   const approvals = query.data?.approvals ?? [];
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-6 py-8">
+    <PageContainer size="md">
       <h1 className="text-2xl font-semibold tracking-tight">Approvals</h1>
       <p className="mt-1 text-sm text-[var(--muted-foreground)]">
         {canDecide
@@ -159,6 +159,6 @@ export function ApprovalsInbox({ workspaceId }: Props) {
       {approvals.length === 0 && !query.isLoading ? (
         <p className="mt-6 text-sm text-[var(--muted-foreground)]">Nothing in this view.</p>
       ) : null}
-    </main>
+    </PageContainer>
   );
 }

@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api } from "@/src/lib/api-client";
 import { qk } from "@/src/core/sync/query-keys";
-import { Button } from "@noirly-dev/ui";
+import { Button, PageContainer } from "@noirly-dev/ui";
 import { Input, Label } from "@noirly-dev/ui";
 
 type Props = { workspaceId: string };
@@ -33,7 +33,7 @@ export function CategoryManager({ workspaceId }: Props) {
   });
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-6 py-8">
+    <PageContainer size="md">
       <h1 className="text-2xl font-semibold tracking-tight">Categories</h1>
       <form
         className="mt-6 flex flex-col gap-3 surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-4 sm:flex-row sm:items-end"
@@ -84,6 +84,6 @@ export function CategoryManager({ workspaceId }: Props) {
           </li>
         ))}
       </ul>
-    </main>
+    </PageContainer>
   );
 }

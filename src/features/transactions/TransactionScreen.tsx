@@ -6,7 +6,7 @@ import { useRef } from "react";
 import { api } from "@/src/lib/api-client";
 import { qk } from "@/src/core/sync/query-keys";
 import { MoneyText } from "@/src/components/MoneyText";
-import { Button } from "@noirly-dev/ui";
+import { Button, PageContainer } from "@noirly-dev/ui";
 import { useUIStore } from "@/src/stores/ui-store";
 
 type Props = {
@@ -51,7 +51,7 @@ export function TransactionScreen({
     categories.data?.categories.find((c) => c.id === id)?.name ?? "Uncategorized";
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-6 py-8">
+    <PageContainer size="lg">
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
@@ -131,6 +131,6 @@ export function TransactionScreen({
           )}
         </div>
       </div>
-    </main>
+    </PageContainer>
   );
 }
