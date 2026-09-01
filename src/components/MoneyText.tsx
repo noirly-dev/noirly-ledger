@@ -19,8 +19,8 @@ export function MoneyText({
     <span
       className={cn(
         "font-mono tabular-nums tracking-tight",
-        tone === "positive" && "text-nl-positive",
-        tone === "negative" && "text-nl-negative",
+        tone === "positive" && "text-[var(--balance-positive)]",
+        tone === "negative" && "text-[var(--balance-negative)]",
         className,
       )}
     >

@@ -4,8 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api } from "@/src/lib/api-client";
 import { qk } from "@/src/core/sync/query-keys";
-import { Button } from "@/src/ui/Button";
-import { Input, Label } from "@/src/ui/Field";
+import { Button } from "@noirly-dev/ui";
+import { Input, Label } from "@noirly-dev/ui";
 
 type Props = { workspaceId: string };
 
@@ -36,7 +36,7 @@ export function CategoryManager({ workspaceId }: Props) {
     <main className="mx-auto w-full max-w-3xl px-6 py-8">
       <h1 className="text-2xl font-semibold tracking-tight">Categories</h1>
       <form
-        className="mt-6 flex flex-col gap-3 rounded-xl border border-nl-border bg-nl-surface p-4 sm:flex-row sm:items-end"
+        className="mt-6 flex flex-col gap-3 surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-4 sm:flex-row sm:items-end"
         onSubmit={(event) => {
           event.preventDefault();
           create.mutate();
@@ -60,7 +60,7 @@ export function CategoryManager({ workspaceId }: Props) {
           Add
         </Button>
       </form>
-      <ul className="mt-6 divide-y divide-nl-border rounded-xl border border-nl-border">
+      <ul className="mt-6 divide-y divide-[var(--hairline)] rounded-xl border border-[var(--hairline)]">
         {(categories.data?.categories ?? []).map((category) => (
           <li key={category.id} className="flex items-center justify-between px-4 py-3">
             <span className="flex items-center gap-3 text-sm">
@@ -71,12 +71,12 @@ export function CategoryManager({ workspaceId }: Props) {
               />
               {category.name}
               {category.isSystem ? (
-                <span className="font-mono text-[10px] text-[#737373]">SYSTEM</span>
+                <span className="font-mono text-[10px] text-[var(--muted-foreground)]">SYSTEM</span>
               ) : null}
             </span>
             <button
               type="button"
-              className="text-xs text-[#737373] hover:text-nl-negative"
+              className="text-xs text-[var(--muted-foreground)] hover:text-[var(--balance-negative)]"
               onClick={() => remove.mutate(category.id)}
             >
               {category.isSystem ? "Archive" : "Delete"}

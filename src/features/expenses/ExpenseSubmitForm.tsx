@@ -9,8 +9,9 @@ import { qk } from "@/src/core/sync/query-keys";
 import { submitExpenseBodySchema } from "@/src/core/schemas/ledger";
 import { COMMON_CURRENCIES } from "@/src/core/money";
 import { isoDate } from "@/src/core/budgets/period";
-import { Button } from "@/src/ui/Button";
-import { Input, Label, Select, Textarea } from "@/src/ui/Field";
+import { Button } from "@noirly-dev/ui";
+import { Input, Label, Textarea } from "@noirly-dev/ui";
+import { Select } from "@/src/components/Select";
 
 type FormValues = {
   budgetPoolId: string;
@@ -98,9 +99,9 @@ export function ExpenseSubmitForm({
 
   return (
     <main className="mx-auto w-full max-w-lg px-6 py-8">
-      <p className="font-mono text-[11px] tracking-[0.2em] text-nl-accent">EXPENSE</p>
+      <p className="font-mono text-[11px] tracking-[0.2em] text-[var(--accent)]">EXPENSE</p>
       <h1 className="mt-2 text-2xl font-semibold tracking-tight">Submit expense</h1>
-      <p className="mt-1 text-sm text-[#A3A3A3]">
+      <p className="mt-1 text-sm text-[var(--muted-foreground)]">
         Submitted spend waits for an approver before it hits the pool.
       </p>
       <form
@@ -170,11 +171,11 @@ export function ExpenseSubmitForm({
             onChange={(event) => void onFile(event.target.files?.[0])}
           />
           {receipt ? (
-            <p className="mt-1 font-mono text-[11px] text-nl-positive">Attached</p>
+            <p className="mt-1 font-mono text-[11px] text-[var(--balance-positive)]">Attached</p>
           ) : null}
         </div>
         {error ? (
-          <p className="text-sm text-nl-negative" role="alert">
+          <p className="text-sm text-[var(--balance-negative)]" role="alert">
             {error}
           </p>
         ) : null}

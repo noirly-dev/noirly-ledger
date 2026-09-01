@@ -15,13 +15,13 @@ export default async function WorkspaceHomePage({
 
   return (
     <main className="mx-auto w-full max-w-5xl px-6 py-8">
-      <p className="font-mono text-[11px] tracking-[0.2em] text-nl-accent">
+      <p className="font-mono text-[11px] tracking-[0.2em] text-[var(--accent)]">
         TEAM · {workspace.role.toUpperCase()}
       </p>
       <h1 className="mt-2 text-2xl font-semibold tracking-tight">{workspace.name}</h1>
-      <p className="mt-2 text-sm text-[#A3A3A3]">
+      <p className="mt-2 text-sm text-[var(--muted-foreground)]">
         Base currency{" "}
-        <span className="font-mono text-[#F5F5F5]">{workspace.baseCurrency}</span>.
+        <span className="font-mono text-[var(--foreground)]">{workspace.baseCurrency}</span>.
         Spend posts to a pool only after an approver decides.
       </p>
 
@@ -37,9 +37,9 @@ export default async function WorkspaceHomePage({
           <Link
             key={card.href}
             href={card.href}
-            className="rounded-xl border border-nl-border bg-nl-surface p-5 transition-colors hover:border-nl-accent/40"
+            className="surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-5 transition-colors hover:border-[var(--accent)]/40"
           >
-            <p className="text-sm font-medium text-[#F5F5F5]">{card.label}</p>
+            <p className="text-sm font-medium text-[var(--foreground)]">{card.label}</p>
           </Link>
         ))}
       </div>

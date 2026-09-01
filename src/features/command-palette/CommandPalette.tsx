@@ -61,27 +61,27 @@ export function CommandPalette({ workspaces }: Props) {
         onClick={() => setOpen(false)}
       />
       <div className="relative mx-auto mt-24 w-full max-w-lg px-4">
-        <Command className="overflow-hidden rounded-xl border border-nl-border bg-nl-surface shadow-xl">
+        <Command className="overflow-hidden surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] shadow-xl">
           <Command.Input
             autoFocus
             placeholder="Search or jump…"
-            className="w-full border-b border-nl-border bg-transparent px-4 py-3 text-sm outline-none"
+            className="w-full border-b border-[var(--hairline)] bg-transparent px-4 py-3 text-sm outline-none"
           />
           <Command.List className="max-h-80 overflow-y-auto p-2">
-            <Command.Empty className="px-3 py-6 text-sm text-[#737373]">
+            <Command.Empty className="px-3 py-6 text-sm text-[var(--muted-foreground)]">
               No results
             </Command.Empty>
             <Command.Group heading="Actions">
               {teamId ? (
                 <Command.Item
-                  className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[selected=true]:bg-[#121212]"
+                  className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[selected=true]:bg-[var(--surface-2)]"
                   onSelect={() => go(`/w/${teamId}/expenses/new`)}
                 >
                   Submit expense
                 </Command.Item>
               ) : (
                 <Command.Item
-                  className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[selected=true]:bg-[#121212]"
+                  className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[selected=true]:bg-[var(--surface-2)]"
                   onSelect={() => {
                     setOpen(false);
                     setComposer(true);
@@ -91,7 +91,7 @@ export function CommandPalette({ workspaces }: Props) {
                 </Command.Item>
               )}
               <Command.Item
-                className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[selected=true]:bg-[#121212]"
+                className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[selected=true]:bg-[var(--surface-2)]"
                 onSelect={() =>
                   go(teamId ? `/w/${teamId}/reports` : "/reports")
                 }
@@ -125,7 +125,7 @@ export function CommandPalette({ workspaces }: Props) {
               ).map((item) => (
                 <Command.Item
                   key={item.href}
-                  className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[selected=true]:bg-[#121212]"
+                  className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[selected=true]:bg-[var(--surface-2)]"
                   onSelect={() => go(item.href)}
                 >
                   {item.label}
@@ -135,7 +135,7 @@ export function CommandPalette({ workspaces }: Props) {
             <Command.Group heading="Workspaces">
               {personal ? (
                 <Command.Item
-                  className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[selected=true]:bg-[#121212]"
+                  className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[selected=true]:bg-[var(--surface-2)]"
                   onSelect={() => go("/home")}
                 >
                   Personal
@@ -146,7 +146,7 @@ export function CommandPalette({ workspaces }: Props) {
                 .map((workspace) => (
                   <Command.Item
                     key={workspace.id}
-                    className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[selected=true]:bg-[#121212]"
+                    className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[selected=true]:bg-[var(--surface-2)]"
                     onSelect={() => go(`/w/${workspace.id}`)}
                   >
                     {workspace.name}

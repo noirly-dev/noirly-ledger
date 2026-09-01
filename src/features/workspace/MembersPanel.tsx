@@ -60,9 +60,9 @@ export function MembersPanel({ workspaceId, currentUserId, canManage }: Props) {
   return (
     <div className="flex flex-col gap-6">
       {canManage ? (
-        <section className="rounded-xl border border-nl-border bg-nl-surface p-4">
-          <h2 className="text-sm font-medium text-[#F5F5F5]">Invite link</h2>
-          <p className="mt-1 text-xs text-[#A3A3A3]">
+        <section className="surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-4">
+          <h2 className="text-sm font-medium text-[var(--foreground)]">Invite link</h2>
+          <p className="mt-1 text-xs text-[var(--muted-foreground)]">
             Copy a one-time link. It expires in 7 days.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -71,7 +71,7 @@ export function MembersPanel({ workspaceId, currentUserId, canManage }: Props) {
               onChange={(event) =>
                 setInviteRole(event.target.value as Exclude<MemberRole, "owner">)
               }
-              className="h-10 rounded-lg border border-nl-border bg-[#121212] px-2 text-sm text-[#F5F5F5]"
+              className="h-10 rounded-lg border border-[var(--hairline)] bg-[var(--surface-2)] px-2 text-sm text-[var(--foreground)]"
             >
               {INVITE_ROLES.map((role) => (
                 <option key={role} value={role}>
@@ -82,7 +82,7 @@ export function MembersPanel({ workspaceId, currentUserId, canManage }: Props) {
             <button
               type="button"
               onClick={() => inviteMutation.mutate()}
-              className="h-10 rounded-lg bg-nl-accent px-4 text-sm font-semibold text-[#0A0A0A]"
+              className="h-10 rounded-lg bg-[var(--accent)] px-4 text-sm font-semibold text-[var(--accent-ink)]"
             >
               Generate link
             </button>
@@ -92,7 +92,7 @@ export function MembersPanel({ workspaceId, currentUserId, canManage }: Props) {
               <input
                 readOnly
                 value={inviteUrl}
-                className="h-10 flex-1 truncate rounded-lg border border-nl-border bg-[#121212] px-3 text-xs text-[#F5F5F5]"
+                className="h-10 flex-1 truncate rounded-lg border border-[var(--hairline)] bg-[var(--surface-2)] px-3 text-xs text-[var(--foreground)]"
               />
               <button
                 type="button"
@@ -100,7 +100,7 @@ export function MembersPanel({ workspaceId, currentUserId, canManage }: Props) {
                   await navigator.clipboard.writeText(inviteUrl);
                   setCopied(true);
                 }}
-                className="h-10 rounded-lg border border-nl-border px-3 text-sm text-[#A3A3A3]"
+                className="h-10 rounded-lg border border-[var(--hairline)] px-3 text-sm text-[var(--muted-foreground)]"
               >
                 {copied ? "Copied" : "Copy"}
               </button>
@@ -109,10 +109,10 @@ export function MembersPanel({ workspaceId, currentUserId, canManage }: Props) {
         </section>
       ) : null}
 
-      <section className="overflow-hidden rounded-xl border border-nl-border bg-nl-surface">
+      <section className="overflow-hidden surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)]">
         <table className="w-full text-left text-sm">
-          <thead className="font-mono text-[10px] uppercase tracking-wide text-[#737373]">
-            <tr className="border-b border-nl-border">
+          <thead className="font-mono text-[10px] uppercase tracking-wide text-[var(--muted-foreground)]">
+            <tr className="border-b border-[var(--hairline)]">
               <th className="px-4 py-3">Member</th>
               <th className="px-4 py-3">Role</th>
               {canManage ? <th className="px-4 py-3" /> : null}
@@ -120,10 +120,10 @@ export function MembersPanel({ workspaceId, currentUserId, canManage }: Props) {
           </thead>
           <tbody>
             {members.map((member) => (
-              <tr key={member.userId} className="border-b border-nl-border last:border-0">
+              <tr key={member.userId} className="border-b border-[var(--hairline)] last:border-0">
                 <td className="px-4 py-3">
-                  <p className="text-[#F5F5F5]">{member.displayName}</p>
-                  <p className="text-xs text-[#737373]">{member.email}</p>
+                  <p className="text-[var(--foreground)]">{member.displayName}</p>
+                  <p className="text-xs text-[var(--muted-foreground)]">{member.email}</p>
                 </td>
                 <td className="px-4 py-3">
                   {canManage && member.userId !== currentUserId ? (
@@ -135,7 +135,7 @@ export function MembersPanel({ workspaceId, currentUserId, canManage }: Props) {
                           role: event.target.value as MemberRole,
                         })
                       }
-                      className="h-9 rounded-md border border-nl-border bg-[#121212] px-2 text-xs text-[#F5F5F5]"
+                      className="h-9 rounded-md border border-[var(--hairline)] bg-[var(--surface-2)] px-2 text-xs text-[var(--foreground)]"
                     >
                       {ROLES.map((role) => (
                         <option key={role} value={role}>
@@ -144,7 +144,7 @@ export function MembersPanel({ workspaceId, currentUserId, canManage }: Props) {
                       ))}
                     </select>
                   ) : (
-                    <span className="font-mono text-xs uppercase text-[#A3A3A3]">
+                    <span className="font-mono text-xs uppercase text-[var(--muted-foreground)]">
                       {member.role}
                     </span>
                   )}
@@ -155,7 +155,7 @@ export function MembersPanel({ workspaceId, currentUserId, canManage }: Props) {
                       <button
                         type="button"
                         onClick={() => removeMutation.mutate(member.userId)}
-                        className="text-xs text-[#A3A3A3] hover:text-nl-negative"
+                        className="text-xs text-[var(--muted-foreground)] hover:text-[var(--balance-negative)]"
                       >
                         Remove
                       </button>
@@ -168,7 +168,7 @@ export function MembersPanel({ workspaceId, currentUserId, canManage }: Props) {
         </table>
       </section>
       {error ? (
-        <p className="text-sm text-nl-negative" role="alert">
+        <p className="text-sm text-[var(--balance-negative)]" role="alert">
           {error}
         </p>
       ) : null}

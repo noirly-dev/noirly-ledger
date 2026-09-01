@@ -31,24 +31,24 @@ export function NotificationBell() {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="relative rounded-lg border border-nl-border px-3 py-1.5 text-sm text-[#A3A3A3] hover:text-[#F5F5F5]"
+        className="relative rounded-lg border border-[var(--hairline)] px-3 py-1.5 text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
         aria-label="Notifications"
       >
         Alerts
         {unread > 0 ? (
-          <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-nl-accent px-1 font-mono text-[10px] text-[#0A0A0A]">
+          <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent)] px-1 font-mono text-[10px] text-[var(--accent-ink)]">
             {unread}
           </span>
         ) : null}
       </button>
       {open ? (
-        <div className="absolute right-0 z-50 mt-2 w-80 overflow-hidden rounded-xl border border-nl-border bg-nl-surface shadow-xl">
-          <p className="border-b border-nl-border px-3 py-2 font-mono text-[10px] uppercase tracking-wide text-[#737373]">
+        <div className="absolute right-0 z-50 mt-2 w-80 overflow-hidden surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] shadow-xl">
+          <p className="border-b border-[var(--hairline)] px-3 py-2 font-mono text-[10px] uppercase tracking-wide text-[var(--muted-foreground)]">
             Notifications
           </p>
           <ul className="max-h-80 overflow-y-auto">
             {items.map((item) => (
-              <li key={item.id} className="border-b border-nl-border last:border-0">
+              <li key={item.id} className="border-b border-[var(--hairline)] last:border-0">
                 {item.href ? (
                   <Link
                     href={item.href}
@@ -56,28 +56,28 @@ export function NotificationBell() {
                       if (!item.readAt) read.mutate(item.id);
                       setOpen(false);
                     }}
-                    className="block px-3 py-2 hover:bg-[#121212]"
+                    className="block px-3 py-2 hover:bg-[var(--surface-2)]"
                   >
-                    <p className="text-sm text-[#F5F5F5]">{item.title}</p>
-                    <p className="text-xs text-[#737373]">{item.body}</p>
+                    <p className="text-sm text-[var(--foreground)]">{item.title}</p>
+                    <p className="text-xs text-[var(--muted-foreground)]">{item.body}</p>
                   </Link>
                 ) : (
                   <button
                     type="button"
-                    className="block w-full px-3 py-2 text-left hover:bg-[#121212]"
+                    className="block w-full px-3 py-2 text-left hover:bg-[var(--surface-2)]"
                     onClick={() => {
                       if (!item.readAt) read.mutate(item.id);
                     }}
                   >
-                    <p className="text-sm text-[#F5F5F5]">{item.title}</p>
-                    <p className="text-xs text-[#737373]">{item.body}</p>
+                    <p className="text-sm text-[var(--foreground)]">{item.title}</p>
+                    <p className="text-xs text-[var(--muted-foreground)]">{item.body}</p>
                   </button>
                 )}
               </li>
             ))}
           </ul>
           {items.length === 0 ? (
-            <p className="px-3 py-6 text-sm text-[#737373]">No notifications</p>
+            <p className="px-3 py-6 text-sm text-[var(--muted-foreground)]">No notifications</p>
           ) : null}
         </div>
       ) : null}

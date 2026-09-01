@@ -12,7 +12,7 @@ export function ProgressBar({ value, tone = "accent" }: Props) {
   const pct = Math.min(Math.max(value, 0), 1);
   return (
     <div
-      className="h-2 overflow-hidden rounded-full bg-[#121212]"
+      className="h-2 overflow-hidden rounded-full bg-[var(--surface-2)]"
       role="progressbar"
       aria-valuemin={0}
       aria-valuemax={100}
@@ -21,9 +21,9 @@ export function ProgressBar({ value, tone = "accent" }: Props) {
       <motion.div
         className={cn(
           "h-full rounded-full",
-          tone === "accent" && "bg-nl-accent",
-          tone === "positive" && "bg-nl-positive",
-          tone === "negative" && "bg-nl-negative",
+          tone === "accent" && "bg-[var(--accent)]",
+          tone === "positive" && "bg-[var(--balance-positive)]",
+          tone === "negative" && "bg-[var(--balance-negative)]",
         )}
         initial={false}
         animate={{ width: `${pct * 100}%` }}

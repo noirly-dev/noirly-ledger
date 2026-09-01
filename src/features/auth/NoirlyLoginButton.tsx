@@ -180,7 +180,7 @@ export function NoirlyLoginButton({ redirectTo = "/home" }: { redirectTo?: strin
         <ProductGoogleOneTap identityUrl={IDENTITY_URL} onCredential={startGoogleOneTap} />
       ) : null}
       <button
-        className="flex h-12 w-full cursor-pointer items-center justify-center bg-panel-ink px-5 font-mono text-[11px] font-semibold tracking-[0.16em] text-panel uppercase transition-colors hover:bg-transparent hover:text-panel-ink hover:outline hover:outline-1 hover:outline-dashed hover:outline-panel-ink disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex h-12 w-full cursor-pointer items-center justify-center bg-[var(--accent-ink)] px-5 font-mono text-[11px] font-semibold tracking-[0.16em] text-[var(--accent)] uppercase transition-colors hover:bg-transparent hover:text-[var(--accent-ink)] hover:outline hover:outline-1 hover:outline-dashed hover:outline-[var(--accent-ink)] disabled:cursor-not-allowed disabled:opacity-50"
         type="button"
         onClick={openIdentityPopup}
         disabled={waiting}
@@ -188,7 +188,7 @@ export function NoirlyLoginButton({ redirectTo = "/home" }: { redirectTo?: strin
         {signedIn ? "Signing in…" : waiting ? "Waiting for Identity…" : "Noirly Login"}
       </button>
       {error ? (
-        <p className="font-mono text-[11px] tracking-[0.08em] text-panel-ink/70">{error}</p>
+        <p className="font-mono text-[11px] tracking-[0.08em] text-[var(--accent-ink)]/70">{error}</p>
       ) : null}
     </div>
   );

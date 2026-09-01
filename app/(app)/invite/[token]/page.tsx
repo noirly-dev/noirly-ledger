@@ -33,9 +33,9 @@ export default async function InvitePage({
       error instanceof ApiError ? error.message : "This invite could not be used.";
     return (
       <main className="mx-auto flex w-full max-w-md flex-col gap-3 px-6 py-16">
-        <p className="font-mono text-xs tracking-[0.2em] text-nl-accent">INVITE</p>
+        <p className="font-mono text-xs tracking-[0.2em] text-[var(--accent)]">INVITE</p>
         <h1 className="text-2xl font-semibold tracking-tight">Invite failed</h1>
-        <p className="text-sm text-nl-negative">{message}</p>
+        <p className="text-sm text-[var(--balance-negative)]">{message}</p>
       </main>
     );
   }

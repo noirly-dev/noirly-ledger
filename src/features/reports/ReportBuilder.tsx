@@ -5,8 +5,9 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/src/lib/api-client";
 import { qk } from "@/src/core/sync/query-keys";
 import { isoDate } from "@/src/core/budgets/period";
-import { Button } from "@/src/ui/Button";
-import { Label, Select } from "@/src/ui/Field";
+import { Button } from "@noirly-dev/ui";
+import { Label } from "@noirly-dev/ui";
+import { Select } from "@/src/components/Select";
 
 type Props = {
   workspaceId: string;
@@ -62,11 +63,11 @@ export function ReportBuilder({ workspaceId, kind }: Props) {
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-8">
       <h1 className="text-2xl font-semibold tracking-tight">Reports</h1>
-      <p className="mt-2 text-sm text-[#A3A3A3]">
+      <p className="mt-2 text-sm text-[var(--muted-foreground)]">
         Export a period as CSV or PDF. Amounts are decimal strings with a currency code.
       </p>
       <form
-        className="mt-6 space-y-4 rounded-xl border border-nl-border bg-nl-surface p-4"
+        className="mt-6 space-y-4 surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-4"
         onSubmit={(event) => {
           event.preventDefault();
           void onExport();
@@ -80,7 +81,7 @@ export function ReportBuilder({ workspaceId, kind }: Props) {
               type="date"
               value={from}
               onChange={(e) => setFrom(e.target.value)}
-              className="w-full rounded-lg border border-nl-border bg-[#121212] px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-[var(--hairline)] bg-[var(--surface-2)] px-3 py-2 text-sm"
               required
             />
           </div>
@@ -91,7 +92,7 @@ export function ReportBuilder({ workspaceId, kind }: Props) {
               type="date"
               value={to}
               onChange={(e) => setTo(e.target.value)}
-              className="w-full rounded-lg border border-nl-border bg-[#121212] px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-[var(--hairline)] bg-[var(--surface-2)] px-3 py-2 text-sm"
               required
             />
           </div>
@@ -144,7 +145,7 @@ export function ReportBuilder({ workspaceId, kind }: Props) {
           </div>
         ) : null}
         {error ? (
-          <p className="text-sm text-nl-negative" role="alert">
+          <p className="text-sm text-[var(--balance-negative)]" role="alert">
             {error}
           </p>
         ) : null}

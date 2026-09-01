@@ -14,7 +14,7 @@ export default async function MembersPage({
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-8">
       <h1 className="text-2xl font-semibold tracking-tight">Members</h1>
-      <p className="mt-2 text-sm text-[#A3A3A3]">
+      <p className="mt-2 text-sm text-[var(--muted-foreground)]">
         Roles: owner, approver, member. Members can submit; approvers decide.
       </p>
       <div className="mt-6">

@@ -8,9 +8,9 @@ import { qk } from "@/src/core/sync/query-keys";
 import { createTransactionBodySchema } from "@/src/core/schemas/ledger";
 import { COMMON_CURRENCIES } from "@/src/core/money";
 import { isoDate } from "@/src/core/budgets/period";
-import { Button } from "@/src/ui/Button";
-import { Dialog } from "@/src/ui/Dialog";
-import { Input, Label, Select, Textarea } from "@/src/ui/Field";
+import { Button, Dialog } from "@noirly-dev/ui";
+import { Input, Label, Textarea } from "@noirly-dev/ui";
+import { Select } from "@/src/components/Select";
 import { useUIStore } from "@/src/stores/ui-store";
 
 type FormValues = {
@@ -183,10 +183,10 @@ export function TransactionComposer({ workspaceId, baseCurrency }: Props) {
             onChange={(event) => onFile(event.target.files?.[0])}
           />
           {receipt ? (
-            <p className="mt-1 font-mono text-[11px] text-nl-positive">Receipt attached</p>
+            <p className="mt-1 font-mono text-[11px] text-[var(--balance-positive)]">Receipt attached</p>
           ) : null}
         </div>
-        {error ? <p className="text-sm text-nl-negative">{error}</p> : null}
+        {error ? <p className="text-sm text-[var(--balance-negative)]">{error}</p> : null}
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="ghost" onClick={() => setOpen(false)}>
             Cancel

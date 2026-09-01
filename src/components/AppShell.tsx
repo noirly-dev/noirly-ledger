@@ -3,7 +3,25 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
+import {
+  BarChart3,
+  FolderKanban,
+  Goal,
+  LayoutDashboard,
+  Receipt,
+  Repeat,
+  Search,
+  Settings,
+  Tags,
+  Users,
+  Wallet,
+} from "lucide-react";
+import {
+  AppShell as UIShell,
+  cn,
+  type AppNavItem,
+} from "@noirly-dev/ui";
 import { SignOutButton } from "@/src/features/auth/SignOutButton";
 import { CreateTeamWorkspace } from "@/src/features/workspace/CreateTeamWorkspace";
 import { CommandPalette } from "@/src/features/command-palette/CommandPalette";
@@ -12,7 +30,6 @@ import { NotificationBell } from "@/src/features/notifications/NotificationBell"
 import { useUIStore, useWorkspaceStore } from "@/src/stores/ui-store";
 import type { WorkspaceWithRole } from "@/src/core/sync/types";
 import { can } from "@/src/core/permissions/can";
-import { cn } from "@/src/lib/cn";
 
 export type ShellUser = {
   displayName: string;
@@ -25,31 +42,54 @@ type Props = {
   children: ReactNode;
 };
 
-function navClass(active: boolean) {
+function SidebarBrand() {
+  return (
+    <div className="flex items-center gap-3.5">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent-soft)] p-1">
+        <Image
+          src="/logo-dark.png"
+          alt=""
+          width={40}
+          height={40}
+          className="h-9 w-9"
+          priority
+        />
+      </div>
+      <div>
+        <p className="font-display text-sm font-semibold">Noirly Ledger</p>
+        <p className="text-xs text-[var(--muted-foreground)]">Finance</p>
+      </div>
+    </div>
+  );
+}
+
+function workspaceLinkClass(active: boolean) {
   return cn(
-    "block border border-transparent px-3 py-2 text-sm",
+    "flex items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors",
     active
-      ? "bg-ink text-canvas"
-      : "text-muted hover:bg-ink hover:text-canvas",
+      ? "bg-[var(--accent-soft)] text-[var(--accent)]"
+      : "text-[var(--muted-foreground)] hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]",
   );
 }
 
 export function AppShell({ user, workspaces, children }: Props) {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
   const setActiveWorkspaceId = useWorkspaceStore((s) => s.setActiveWorkspaceId);
 
   const personal = workspaces.find((w) => w.kind === "personal");
   const teams = workspaces.filter((w) => w.kind === "team");
 
   const activeWorkspaceId = pathname.startsWith("/w/")
-    ? pathname.split("/")[2] ?? null
-    : personal?.id ?? null;
+    ? (pathname.split("/")[2] ?? null)
+    : (personal?.id ?? null);
 
   const isPersonalRoute =
     !pathname.startsWith("/w/") &&
     !pathname.startsWith("/settings") &&
     pathname !== "/login";
+
+  const teamRole =
+    teams.find((w) => w.id === activeWorkspaceId)?.role ?? "member";
 
   useEffect(() => {
     if (activeWorkspaceId) {
@@ -57,235 +97,170 @@ export function AppShell({ user, workspaces, children }: Props) {
     }
   }, [activeWorkspaceId, setActiveWorkspaceId]);
 
+  const navItems: AppNavItem[] = useMemo(() => {
+    if (pathname.startsWith("/w/") && activeWorkspaceId) {
+      const items: AppNavItem[] = [
+        {
+          href: `/w/${activeWorkspaceId}`,
+          label: "Dashboard",
+          icon: LayoutDashboard,
+          match: "exact",
+        },
+        {
+          href: `/w/${activeWorkspaceId}/pools`,
+          label: "Budget pools",
+          icon: FolderKanban,
+          match: "prefix",
+        },
+        {
+          href: `/w/${activeWorkspaceId}/expenses`,
+          label: "Expenses",
+          icon: Receipt,
+          match: "prefix",
+        },
+      ];
+      if (can(teamRole, "expense.decide")) {
+        items.push({
+          href: `/w/${activeWorkspaceId}/approvals`,
+          label: "Approvals",
+          icon: Wallet,
+          match: "prefix",
+        });
+      }
+      items.push(
+        {
+          href: `/w/${activeWorkspaceId}/members`,
+          label: "Members",
+          icon: Users,
+          match: "prefix",
+        },
+        {
+          href: `/w/${activeWorkspaceId}/reports`,
+          label: "Reports",
+          icon: BarChart3,
+          match: "prefix",
+        },
+      );
+      return items;
+    }
+
+    return [
+      { href: "/home", label: "Dashboard", icon: LayoutDashboard, match: "exact" },
+      { href: "/transactions", label: "Transactions", icon: Receipt, match: "prefix" },
+      { href: "/budgets", label: "Budgets", icon: Wallet, match: "prefix" },
+      { href: "/categories", label: "Categories", icon: Tags, match: "prefix" },
+      { href: "/goals", label: "Goals", icon: Goal, match: "prefix" },
+      { href: "/recurring", label: "Recurring", icon: Repeat, match: "prefix" },
+      { href: "/reports", label: "Reports", icon: BarChart3, match: "prefix" },
+    ];
+  }, [activeWorkspaceId, pathname, teamRole]);
+
+  const settingsItem: AppNavItem = {
+    href: "/settings",
+    label: "Settings",
+    icon: Settings,
+    match: "prefix",
+  };
+
+  const items = [...navItems, settingsItem];
+
   return (
-    <div className="flex min-h-full">
-      {open ? (
-        <button
-          type="button"
-          aria-label="Close navigation"
-          className="fixed inset-0 z-30 bg-black/50 md:hidden"
-          onClick={() => setOpen(false)}
-        />
-      ) : null}
-
-      <aside
-        className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-dashed border-hairline bg-canvas transition-transform md:static md:translate-x-0",
-          open ? "translate-x-0" : "-translate-x-full md:translate-x-0",
-        )}
-      >
-        <div className="border-b border-dashed border-hairline px-5 py-5">
-          <div className="flex items-center gap-3">
-            <Image
-              src="/logo-light.png"
-              alt=""
-              width={40}
-              height={40}
-              className="h-10 w-10 border border-dashed border-hairline dark:hidden"
-              priority
-            />
-            <Image
-              src="/logo-dark.png"
-              alt=""
-              width={40}
-              height={40}
-              className="hidden h-10 w-10 border border-dashed border-hairline dark:block"
-              priority
-            />
-            <p className="font-display text-lg font-bold tracking-[-0.04em] uppercase">
-              Noirly Ledger
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => useUIStore.getState().setCommandPaletteOpen(true)}
-            className="mt-3 flex w-full items-center justify-between border border-dashed border-hairline bg-surface px-3 py-2 text-left text-sm text-muted hover:bg-ink hover:text-canvas"
-          >
-            <span>Search</span>
-            <span className="font-mono text-[10px]">⌘K</span>
-          </button>
-        </div>
-
-        <nav className="flex flex-1 flex-col gap-6 overflow-y-auto px-3 py-4">
-          <section>
-            <p className="px-2 pb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[#737373]">
-              Workspace
-            </p>
-            <ul className="flex flex-col gap-1">
-              {personal ? (
-                <li>
-                  <Link
-                    href="/home"
-                    onClick={() => setOpen(false)}
-                    className={navClass(isPersonalRoute || pathname === "/home")}
-                  >
-                    <span className="flex items-center justify-between gap-2">
-                      <span className="truncate">{personal.name}</span>
-                      <span className="font-mono text-[10px] uppercase tracking-wide text-[#737373]">
-                        personal
-                      </span>
-                    </span>
-                  </Link>
-                </li>
-              ) : null}
-              {teams.map((workspace) => {
-                const href = `/w/${workspace.id}`;
-                const active = activeWorkspaceId === workspace.id && pathname.startsWith("/w/");
-                return (
-                  <li key={workspace.id}>
-                    <Link
-                      href={href}
-                      onClick={() => setOpen(false)}
-                      className={navClass(active)}
-                    >
-                      <span className="flex items-center justify-between gap-2">
-                        <span className="truncate">{workspace.name}</span>
-                        <span className="font-mono text-[10px] uppercase tracking-wide text-[#737373]">
-                          team
+    <>
+      <UIShell
+        sidebar={{
+          brand: (
+            <div className="space-y-4">
+              <SidebarBrand />
+              <button
+                type="button"
+                onClick={() => useUIStore.getState().setCommandPaletteOpen(true)}
+                className="flex w-full items-center justify-between rounded-xl border border-[var(--hairline)] bg-[var(--surface-2)] px-3 py-2 text-left text-sm text-[var(--muted-foreground)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--foreground)]"
+              >
+                <span className="flex items-center gap-2">
+                  <Search size={14} />
+                  Search
+                </span>
+                <span className="font-mono text-[10px]">⌘K</span>
+              </button>
+              <div>
+                <p className="px-1 pb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--muted-foreground)]">
+                  Workspace
+                </p>
+                <ul className="flex flex-col gap-0.5">
+                  {personal ? (
+                    <li>
+                      <Link
+                        href="/home"
+                        className={workspaceLinkClass(
+                          isPersonalRoute || pathname === "/home",
+                        )}
+                      >
+                        <span className="truncate">{personal.name}</span>
+                        <span className="font-mono text-[10px] uppercase tracking-wide opacity-60">
+                          personal
                         </span>
-                      </span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-            <CreateTeamWorkspace />
-          </section>
-
-          <section>
-            <p className="px-2 pb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[#737373]">
-              Navigate
+                      </Link>
+                    </li>
+                  ) : null}
+                  {teams.map((workspace) => {
+                    const href = `/w/${workspace.id}`;
+                    const active =
+                      activeWorkspaceId === workspace.id &&
+                      pathname.startsWith("/w/");
+                    return (
+                      <li key={workspace.id}>
+                        <Link href={href} className={workspaceLinkClass(active)}>
+                          <span className="truncate">{workspace.name}</span>
+                          <span className="font-mono text-[10px] uppercase tracking-wide opacity-60">
+                            team
+                          </span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <CreateTeamWorkspace />
+              </div>
+            </div>
+          ),
+          items,
+          footer: (
+            <div className="space-y-3 border-t border-[var(--hairline)] pt-4">
+              <div className="hidden md:block">
+                <NotificationBell />
+              </div>
+              <div>
+                <p className="truncate text-sm">{user.displayName}</p>
+                <p className="truncate font-mono text-[11px] text-[var(--muted-foreground)]">
+                  {user.email}
+                </p>
+              </div>
+              <SignOutButton />
+            </div>
+          ),
+        }}
+        header={{
+          brand: (
+            <p className="font-display text-sm font-semibold tracking-tight">
+              Ledger
             </p>
-            <ul className="flex flex-col gap-1">
-              {pathname.startsWith("/w/") && activeWorkspaceId ? (
-                <TeamNav
-                  workspaceId={activeWorkspaceId}
-                  role={
-                    teams.find((w) => w.id === activeWorkspaceId)?.role ?? "member"
-                  }
-                  pathname={pathname}
-                  onNavigate={() => setOpen(false)}
-                />
-              ) : (
-                <>
-                  <li>
-                    <Link href="/home" onClick={() => setOpen(false)} className={navClass(pathname === "/home")}>
-                      Dashboard
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/transactions"
-                      onClick={() => setOpen(false)}
-                      className={navClass(pathname.startsWith("/transactions"))}
-                    >
-                      Transactions
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/budgets"
-                      onClick={() => setOpen(false)}
-                      className={navClass(pathname.startsWith("/budgets"))}
-                    >
-                      Budgets
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/categories"
-                      onClick={() => setOpen(false)}
-                      className={navClass(pathname.startsWith("/categories"))}
-                    >
-                      Categories
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/goals"
-                      onClick={() => setOpen(false)}
-                      className={navClass(pathname.startsWith("/goals"))}
-                    >
-                      Goals
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/recurring"
-                      onClick={() => setOpen(false)}
-                      className={navClass(pathname.startsWith("/recurring"))}
-                    >
-                      Recurring
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/reports"
-                      onClick={() => setOpen(false)}
-                      className={navClass(pathname.startsWith("/reports"))}
-                    >
-                      Reports
-                    </Link>
-                  </li>
-                </>
-              )}
-              <li>
-                <Link
-                  href="/settings"
-                  onClick={() => setOpen(false)}
-                  className={navClass(pathname.startsWith("/settings"))}
-                >
-                  Settings
-                </Link>
-              </li>
-            </ul>
-          </section>
-        </nav>
-
-        <div className="border-t border-dashed border-hairline px-4 py-4">
-          <div className="mb-3 hidden md:block">
-            <NotificationBell />
-          </div>
-          <p className="truncate text-sm text-ink">{user.displayName}</p>
-          <p className="truncate font-mono text-[11px] text-muted">{user.email}</p>
-          <div className="mt-3">
-            <SignOutButton />
-          </div>
-        </div>
-      </aside>
-
-      <div className="flex min-h-full min-w-0 flex-1 flex-col">
-        <header className="flex items-center gap-3 border-b border-dashed border-hairline px-4 py-3 md:hidden">
-          <button
-            type="button"
-            onClick={() => setOpen(true)}
-            className="border border-dashed border-hairline px-3 py-1.5 text-sm text-ink"
-          >
-            Menu
-          </button>
-          <Image
-            src="/logo-light.png"
-            alt=""
-            width={28}
-            height={28}
-            className="h-7 w-7 dark:hidden"
-          />
-          <Image
-            src="/logo-dark.png"
-            alt=""
-            width={28}
-            height={28}
-            className="hidden h-7 w-7 dark:block"
-          />
-          <p className="font-display text-sm font-bold tracking-[-0.04em] uppercase">
-            Ledger
-          </p>
-          <div className="ml-auto">
-            <NotificationBell />
-          </div>
-        </header>
-        <div className="min-w-0 flex-1">{children}</div>
-      </div>
+          ),
+          actions: (
+            <>
+              <button
+                type="button"
+                onClick={() => useUIStore.getState().setCommandPaletteOpen(true)}
+                className="rounded-lg border border-[var(--hairline)] px-3 py-1.5 font-mono text-sm text-[var(--muted-foreground)]"
+              >
+                ⌘K
+              </button>
+              <NotificationBell />
+            </>
+          ),
+        }}
+      >
+        {children}
+      </UIShell>
       <CommandPalette workspaces={workspaces} />
       {personal ? (
         <TransactionComposer
@@ -293,53 +268,6 @@ export function AppShell({ user, workspaces, children }: Props) {
           baseCurrency={personal.baseCurrency}
         />
       ) : null}
-    </div>
-  );
-}
-
-function TeamNav({
-  workspaceId,
-  role,
-  pathname,
-  onNavigate,
-}: {
-  workspaceId: string;
-  role: WorkspaceWithRole["role"];
-  pathname: string;
-  onNavigate: () => void;
-}) {
-  const items = [
-    { href: `/w/${workspaceId}`, label: "Dashboard", match: "exact" as const },
-    { href: `/w/${workspaceId}/pools`, label: "Budget pools", match: "/pools" },
-    { href: `/w/${workspaceId}/expenses`, label: "Expenses", match: "/expenses" },
-    ...(can(role, "expense.decide")
-      ? [
-          {
-            href: `/w/${workspaceId}/approvals`,
-            label: "Approvals",
-            match: "/approvals",
-          },
-        ]
-      : []),
-    { href: `/w/${workspaceId}/members`, label: "Members", match: "/members" },
-    { href: `/w/${workspaceId}/reports`, label: "Reports", match: "/reports" },
-  ];
-
-  return (
-    <>
-      {items.map((item) => {
-        const active =
-          item.match === "exact"
-            ? pathname === item.href
-            : pathname.includes(item.match);
-        return (
-          <li key={item.href}>
-            <Link href={item.href} onClick={onNavigate} className={navClass(active)}>
-              {item.label}
-            </Link>
-          </li>
-        );
-      })}
     </>
   );
 }

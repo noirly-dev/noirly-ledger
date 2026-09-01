@@ -1,8 +1,8 @@
 "use client";
 
 import type { BudgetPool } from "@/src/core/sync/types";
-import { MoneyText } from "@/src/ui/MoneyText";
-import { ProgressBar } from "@/src/ui/ProgressBar";
+import { MoneyText } from "@/src/components/MoneyText";
+import { ProgressBar } from "@/src/components/ProgressBar";
 
 export function poolUsage(pool: BudgetPool) {
   const remaining = pool.limitAmountMinor - pool.currentSpendMinor;
@@ -23,12 +23,12 @@ export function PoolMeter({ pool }: { pool: BudgetPool }) {
           amountMinor={pool.currentSpendMinor}
           currency={pool.currency}
         />
-        <span className="text-xs text-[#737373]">
+        <span className="text-xs text-[var(--muted-foreground)]">
           of <MoneyText amountMinor={pool.limitAmountMinor} currency={pool.currency} />
         </span>
       </div>
       <ProgressBar value={ratio} tone={over ? "negative" : "accent"} />
-      <p className="text-xs text-[#A3A3A3]">
+      <p className="text-xs text-[var(--muted-foreground)]">
         {over ? "Over by " : "Remaining "}
         <MoneyText
           amountMinor={Math.abs(remaining)}

@@ -5,8 +5,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef } from "react";
 import { api } from "@/src/lib/api-client";
 import { qk } from "@/src/core/sync/query-keys";
-import { MoneyText } from "@/src/ui/MoneyText";
-import { Button } from "@/src/ui/Button";
+import { MoneyText } from "@/src/components/MoneyText";
+import { Button } from "@noirly-dev/ui";
 import { useUIStore } from "@/src/stores/ui-store";
 
 type Props = {
@@ -57,15 +57,15 @@ export function TransactionScreen({
           <h1 className="text-2xl font-semibold tracking-tight">
             {recurringOnly ? "Recurring" : "Transactions"}
           </h1>
-          <p className="mt-1 text-sm text-[#A3A3A3]">
+          <p className="mt-1 text-sm text-[var(--muted-foreground)]">
             Amounts in original currency; base {baseCurrency} is stored on save.
           </p>
         </div>
         <Button onClick={() => setOpen(true)}>Add</Button>
       </div>
 
-      <div className="mt-6 overflow-hidden rounded-xl border border-nl-border">
-        <div className="grid grid-cols-[7rem_1fr_1fr_6rem_8rem_4rem] border-b border-nl-border bg-nl-surface px-4 py-3 text-[11px] uppercase tracking-wide text-[#737373]">
+      <div className="mt-6 overflow-hidden rounded-xl border border-[var(--hairline)]">
+        <div className="grid grid-cols-[7rem_1fr_1fr_6rem_8rem_4rem] border-b border-[var(--hairline)] bg-[var(--surface)] px-4 py-3 text-[11px] uppercase tracking-wide text-[var(--muted-foreground)]">
           <span>Date</span>
           <span>Category</span>
           <span>Note</span>
@@ -75,7 +75,7 @@ export function TransactionScreen({
         </div>
         <div ref={parentRef} className="max-h-[32rem] overflow-auto">
           {items.length === 0 ? (
-            <p className="px-4 py-10 text-center text-sm text-[#737373]">
+            <p className="px-4 py-10 text-center text-sm text-[var(--muted-foreground)]">
               No transactions yet.
             </p>
           ) : (
@@ -88,18 +88,18 @@ export function TransactionScreen({
                 return (
                   <div
                     key={txn.id}
-                    className="absolute left-0 grid w-full grid-cols-[7rem_1fr_1fr_6rem_8rem_4rem] items-center border-b border-nl-border px-4 text-sm last:border-0"
+                    className="absolute left-0 grid w-full grid-cols-[7rem_1fr_1fr_6rem_8rem_4rem] items-center border-b border-[var(--hairline)] px-4 text-sm last:border-0"
                     style={{
                       height: `${virtualRow.size}px`,
                       transform: `translateY(${virtualRow.start}px)`,
                     }}
                   >
-                    <span className="font-mono tabular-nums text-[#A3A3A3]">
+                    <span className="font-mono tabular-nums text-[var(--muted-foreground)]">
                       {txn.date}
                     </span>
                     <span>{categoryName(txn.categoryId)}</span>
-                    <span className="truncate text-[#A3A3A3]">{txn.note ?? "—"}</span>
-                    <span className="capitalize text-[#A3A3A3]">{txn.type}</span>
+                    <span className="truncate text-[var(--muted-foreground)]">{txn.note ?? "—"}</span>
+                    <span className="capitalize text-[var(--muted-foreground)]">{txn.type}</span>
                     <span className="text-right">
                       <MoneyText
                         amountMinor={
@@ -118,7 +118,7 @@ export function TransactionScreen({
                     <span className="text-right">
                       <button
                         type="button"
-                        className="text-xs text-[#737373] hover:text-nl-negative"
+                        className="text-xs text-[var(--muted-foreground)] hover:text-[var(--balance-negative)]"
                         onClick={() => remove.mutate(txn.id)}
                       >
                         Delete

@@ -14,11 +14,11 @@ export function PoolListPreview({ workspaceId }: { workspaceId: string }) {
   const pools = poolsQuery.data?.pools ?? [];
 
   if (poolsQuery.isLoading) {
-    return <p className="mt-8 text-sm text-[#737373]">Loading pools…</p>;
+    return <p className="mt-8 text-sm text-[var(--muted-foreground)]">Loading pools…</p>;
   }
   if (pools.length === 0) {
     return (
-      <p className="mt-8 text-sm text-[#737373]">
+      <p className="mt-8 text-sm text-[var(--muted-foreground)]">
         No budget pools yet. Approvers can create one under Budget pools.
       </p>
     );
@@ -32,7 +32,7 @@ export function PoolListPreview({ workspaceId }: { workspaceId: string }) {
           <li key={pool.id}>
             <Link
               href={`/w/${workspaceId}/pools/${pool.id}`}
-              className="block rounded-xl border border-nl-border bg-nl-surface p-4 hover:border-nl-accent/40"
+              className="block surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-4 hover:border-[var(--accent)]/40"
             >
               <p className="text-sm font-medium">{pool.name}</p>
               <div className="mt-3">

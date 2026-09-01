@@ -5,8 +5,9 @@ import { useState } from "react";
 import { api } from "@/src/lib/api-client";
 import { qk } from "@/src/core/sync/query-keys";
 import { COMMON_CURRENCIES, formatScaledRate } from "@/src/core/money";
-import { Button } from "@/src/ui/Button";
-import { Input, Label, Select } from "@/src/ui/Field";
+import { Button } from "@noirly-dev/ui";
+import { Input, Label } from "@noirly-dev/ui";
+import { Select } from "@/src/components/Select";
 import { isoDate } from "@/src/core/budgets/period";
 
 type Props = { workspaceId: string; baseCurrency: string };
@@ -34,13 +35,13 @@ export function CurrencyScreen({ workspaceId, baseCurrency }: Props) {
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-8">
       <h1 className="text-2xl font-semibold tracking-tight">Currency</h1>
-      <p className="mt-2 text-sm text-[#A3A3A3]">
+      <p className="mt-2 text-sm text-[var(--muted-foreground)]">
         Base currency is{" "}
-        <span className="font-mono text-[#F5F5F5]">{baseCurrency}</span>. Rates are
+        <span className="font-mono text-[var(--foreground)]">{baseCurrency}</span>. Rates are
         user-set (how many {baseCurrency} per 1.00 of the quote currency). No live FX feed.
       </p>
       <form
-        className="mt-6 grid gap-3 rounded-xl border border-nl-border bg-nl-surface p-4 sm:grid-cols-3 sm:items-end"
+        className="mt-6 grid gap-3 surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-4 sm:grid-cols-3 sm:items-end"
         onSubmit={(event) => {
           event.preventDefault();
           save.mutate();
@@ -70,11 +71,11 @@ export function CurrencyScreen({ workspaceId, baseCurrency }: Props) {
           Save rate
         </Button>
       </form>
-      <ul className="mt-6 divide-y divide-nl-border rounded-xl border border-nl-border">
+      <ul className="mt-6 divide-y divide-[var(--hairline)] rounded-xl border border-[var(--hairline)]">
         {(rates.data?.rates ?? []).map((row) => (
           <li key={row.id} className="flex items-center justify-between px-4 py-3 text-sm">
             <span className="font-mono">{row.currency}</span>
-            <span className="font-mono tabular-nums text-[#A3A3A3]">
+            <span className="font-mono tabular-nums text-[var(--muted-foreground)]">
               {formatScaledRate(row.rateToBaseScaled)} {baseCurrency} · {row.effectiveFrom}
             </span>
           </li>

@@ -6,8 +6,8 @@ import { api } from "@/src/lib/api-client";
 import { qk } from "@/src/core/sync/query-keys";
 import { useCan } from "@/src/features/workspace/WorkspaceRoleContext";
 import type { ApprovalView, BudgetPool } from "@/src/core/sync/types";
-import { Button } from "@/src/ui/Button";
-import { MoneyText } from "@/src/ui/MoneyText";
+import { Button } from "@noirly-dev/ui";
+import { MoneyText } from "@/src/components/MoneyText";
 
 type Props = { workspaceId: string };
 
@@ -86,7 +86,7 @@ export function ApprovalsInbox({ workspaceId }: Props) {
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-8">
       <h1 className="text-2xl font-semibold tracking-tight">Approvals</h1>
-      <p className="mt-1 text-sm text-[#A3A3A3]">
+      <p className="mt-1 text-sm text-[var(--muted-foreground)]">
         {canDecide
           ? "Approve or reject submitted expenses. Spend hits the pool only on approve."
           : "You can track submitted expenses. Approvers decide."}
@@ -99,8 +99,8 @@ export function ApprovalsInbox({ workspaceId }: Props) {
             onClick={() => setFilter(value)}
             className={`rounded-lg px-3 py-1.5 text-xs ${
               filter === value
-                ? "bg-nl-surface text-[#F5F5F5]"
-                : "text-[#737373] hover:text-[#F5F5F5]"
+                ? "bg-[var(--surface)] text-[var(--foreground)]"
+                : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
             }`}
           >
             {value === "submitted" ? "Pending" : "All"}
@@ -108,7 +108,7 @@ export function ApprovalsInbox({ workspaceId }: Props) {
         ))}
       </div>
       {error ? (
-        <p className="mt-3 text-sm text-nl-negative" role="alert">
+        <p className="mt-3 text-sm text-[var(--balance-negative)]" role="alert">
           {error}
         </p>
       ) : null}
@@ -116,14 +116,14 @@ export function ApprovalsInbox({ workspaceId }: Props) {
         {approvals.map((item) => (
           <li
             key={item.id}
-            className="rounded-xl border border-nl-border bg-nl-surface p-4"
+            className="surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-4"
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-sm text-[#F5F5F5]">
+                <p className="text-sm text-[var(--foreground)]">
                   {item.transaction.note || "Expense"}
                 </p>
-                <p className="mt-1 font-mono text-[11px] text-[#737373]">
+                <p className="mt-1 font-mono text-[11px] text-[var(--muted-foreground)]">
                   {item.submitterName} · {item.transaction.date} · {item.status}
                 </p>
               </div>
@@ -143,7 +143,7 @@ export function ApprovalsInbox({ workspaceId }: Props) {
                   Approve
                 </Button>
                 <Button
-                  variant="danger"
+                  variant="destructive"
                   disabled={decide.isPending}
                   onClick={() =>
                     decide.mutate({ approvalId: item.id, decision: "rejected" })
@@ -157,7 +157,7 @@ export function ApprovalsInbox({ workspaceId }: Props) {
         ))}
       </ul>
       {approvals.length === 0 && !query.isLoading ? (
-        <p className="mt-6 text-sm text-[#737373]">Nothing in this view.</p>
+        <p className="mt-6 text-sm text-[var(--muted-foreground)]">Nothing in this view.</p>
       ) : null}
     </main>
   );

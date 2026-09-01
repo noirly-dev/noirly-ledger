@@ -4,10 +4,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api } from "@/src/lib/api-client";
 import { qk } from "@/src/core/sync/query-keys";
-import { Button } from "@/src/ui/Button";
-import { Input, Label } from "@/src/ui/Field";
-import { ProgressBar } from "@/src/ui/ProgressBar";
-import { MoneyText } from "@/src/ui/MoneyText";
+import { Button } from "@noirly-dev/ui";
+import { Input, Label } from "@noirly-dev/ui";
+import { ProgressBar } from "@/src/components/ProgressBar";
+import { MoneyText } from "@/src/components/MoneyText";
 
 type Props = { workspaceId: string; baseCurrency: string };
 
@@ -51,7 +51,7 @@ export function GoalsScreen({ workspaceId, baseCurrency }: Props) {
     <main className="mx-auto w-full max-w-3xl px-6 py-8">
       <h1 className="text-2xl font-semibold tracking-tight">Savings goals</h1>
       <form
-        className="mt-6 grid gap-3 rounded-xl border border-nl-border bg-nl-surface p-4 sm:grid-cols-3"
+        className="mt-6 grid gap-3 surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-4 sm:grid-cols-3"
         onSubmit={(event) => {
           event.preventDefault();
           create.mutate();
@@ -94,11 +94,11 @@ export function GoalsScreen({ workspaceId, baseCurrency }: Props) {
             ? goal.currentAmountMinor / goal.targetAmountMinor
             : 0;
           return (
-            <li key={goal.id} className="rounded-xl border border-nl-border bg-nl-surface p-4">
+            <li key={goal.id} className="surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium">{goal.name}</p>
                 {goal.targetDate ? (
-                  <p className="font-mono text-xs text-[#737373]">{goal.targetDate}</p>
+                  <p className="font-mono text-xs text-[var(--muted-foreground)]">{goal.targetDate}</p>
                 ) : null}
               </div>
               <div className="mt-3">

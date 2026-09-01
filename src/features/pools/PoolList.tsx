@@ -7,8 +7,8 @@ import { api } from "@/src/lib/api-client";
 import { qk } from "@/src/core/sync/query-keys";
 import { useCan } from "@/src/features/workspace/WorkspaceRoleContext";
 import { PoolMeter } from "@/src/features/pools/PoolMeter";
-import { Button } from "@/src/ui/Button";
-import { Input, Label, Textarea } from "@/src/ui/Field";
+import { Button } from "@noirly-dev/ui";
+import { Input, Label, Textarea } from "@noirly-dev/ui";
 
 type Props = {
   workspaceId: string;
@@ -50,13 +50,13 @@ export function PoolList({ workspaceId, baseCurrency }: Props) {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Budget pools</h1>
-          <p className="mt-1 text-sm text-[#A3A3A3]">
+          <p className="mt-1 text-sm text-[var(--muted-foreground)]">
             Team spend posts to a pool only after approval.
           </p>
         </div>
         <Link
           href={`/w/${workspaceId}/expenses/new`}
-          className="text-sm text-nl-accent hover:underline"
+          className="text-sm text-[var(--accent)] hover:underline"
         >
           Submit expense
         </Link>
@@ -64,7 +64,7 @@ export function PoolList({ workspaceId, baseCurrency }: Props) {
 
       {canManage ? (
         <form
-          className="mt-6 space-y-3 rounded-xl border border-nl-border bg-nl-surface p-4"
+          className="mt-6 space-y-3 surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-4"
           onSubmit={(event) => {
             event.preventDefault();
             create.mutate();
@@ -102,7 +102,7 @@ export function PoolList({ workspaceId, baseCurrency }: Props) {
             />
           </div>
           {create.isError ? (
-            <p className="text-sm text-nl-negative" role="alert">
+            <p className="text-sm text-[var(--balance-negative)]" role="alert">
               {(create.error as Error).message}
             </p>
           ) : null}
@@ -117,11 +117,11 @@ export function PoolList({ workspaceId, baseCurrency }: Props) {
           <li key={pool.id}>
             <Link
               href={`/w/${workspaceId}/pools/${pool.id}`}
-              className="block rounded-xl border border-nl-border bg-nl-surface p-4 transition-colors hover:border-nl-accent/40"
+              className="block surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-4 transition-colors hover:border-[var(--accent)]/40"
             >
-              <p className="text-sm font-medium text-[#F5F5F5]">{pool.name}</p>
+              <p className="text-sm font-medium text-[var(--foreground)]">{pool.name}</p>
               {pool.description ? (
-                <p className="mt-1 text-xs text-[#737373]">{pool.description}</p>
+                <p className="mt-1 text-xs text-[var(--muted-foreground)]">{pool.description}</p>
               ) : null}
               <div className="mt-3">
                 <PoolMeter pool={pool} />
@@ -131,10 +131,10 @@ export function PoolList({ workspaceId, baseCurrency }: Props) {
         ))}
       </ul>
       {poolsQuery.isLoading ? (
-        <p className="mt-6 text-sm text-[#737373]">Loading pools…</p>
+        <p className="mt-6 text-sm text-[var(--muted-foreground)]">Loading pools…</p>
       ) : null}
       {!poolsQuery.isLoading && pools.length === 0 ? (
-        <p className="mt-6 text-sm text-[#737373]">No pools yet.</p>
+        <p className="mt-6 text-sm text-[var(--muted-foreground)]">No pools yet.</p>
       ) : null}
     </main>
   );
