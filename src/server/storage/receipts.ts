@@ -2,6 +2,12 @@ import { mkdir, writeFile, readFile, unlink } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import { ApiError } from "@/src/server/api/http";
+import {
+  canWriteToR2,
+  deleteObject,
+  getObjectBuffer,
+  uploadBuffer,
+} from "@/src/server/storage/r2";
 
 const ROOT = resolve(process.cwd(), "data", "receipts");
 const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp", "application/pdf"]);
@@ -13,6 +19,14 @@ const EXT: Record<string, string> = {
   "image/webp": "webp",
   "application/pdf": "pdf",
 };
+
+function mimeFromKey(key: string): string {
+  const ext = key.split(".").pop()?.toLowerCase();
+  if (ext === "png") return "image/png";
+  if (ext === "webp") return "image/webp";
+  if (ext === "pdf") return "application/pdf";
+  return "image/jpeg";
+}
 
 export async function saveReceipt(input: {
   workspaceId: string;
@@ -27,7 +41,19 @@ export async function saveReceipt(input: {
   }
 
   const ext = EXT[input.mime] ?? "bin";
-  const key = `${input.workspaceId}/${randomUUID()}.${ext}`;
+  const filename = `${randomUUID()}.${ext}`;
+
+  if (canWriteToR2()) {
+    const uploaded = await uploadBuffer(
+      input.bytes,
+      filename,
+      input.mime,
+      `ledger/receipts/${input.workspaceId}`,
+    );
+    return { key: uploaded.key, url: uploaded.publicUrl };
+  }
+
+  const key = `${input.workspaceId}/${filename}`;
   const path = join(ROOT, key);
   await mkdir(dirname(path), { recursive: true });
   await writeFile(path, input.bytes);
@@ -38,21 +64,30 @@ export async function readReceipt(key: string): Promise<{ bytes: Buffer; mime: s
   if (key.includes("..") || key.startsWith("/") || key.startsWith("\\")) {
     throw new ApiError(400, "invalid_request", "Invalid receipt key");
   }
-  const path = join(ROOT, key);
-  const bytes = await readFile(path);
-  const ext = key.split(".").pop()?.toLowerCase();
-  const mime =
-    ext === "png"
-      ? "image/png"
-      : ext === "webp"
-        ? "image/webp"
-        : ext === "pdf"
-          ? "application/pdf"
-          : "image/jpeg";
-  return { bytes, mime };
+
+  try {
+    const bytes = await readFile(join(ROOT, key));
+    return { bytes, mime: mimeFromKey(key) };
+  } catch {
+    if (!canWriteToR2()) {
+      throw new ApiError(404, "not_found", "Receipt not found");
+    }
+    try {
+      const bytes = await getObjectBuffer(key);
+      return { bytes, mime: mimeFromKey(key) };
+    } catch {
+      throw new ApiError(404, "not_found", "Receipt not found");
+    }
+  }
 }
 
 export async function deleteReceipt(key: string): Promise<void> {
   if (!key || key.includes("..")) return;
+
+  if (canWriteToR2() && key.startsWith("ledger/")) {
+    await deleteObject(key).catch(() => undefined);
+    return;
+  }
+
   await unlink(join(ROOT, key)).catch(() => undefined);
 }
