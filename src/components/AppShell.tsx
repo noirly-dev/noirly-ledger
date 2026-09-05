@@ -8,19 +8,22 @@ import {
   FolderKanban,
   Goal,
   LayoutDashboard,
+  Plus,
   Receipt,
   Repeat,
-  Search,
   Settings,
   Tags,
   Users,
   Wallet,
 } from "lucide-react";
 import {
+  Avatar,
   AppShell as UIShell,
   SidebarBrand,
   cn,
+  type AppNavGroup,
   type AppNavItem,
+  type Crumb,
 } from "@noirly-dev/ui";
 import { SignOutButton } from "@/src/features/auth/SignOutButton";
 import { CreateTeamWorkspace } from "@/src/features/workspace/CreateTeamWorkspace";
@@ -42,13 +45,11 @@ type Props = {
   children: ReactNode;
 };
 
+const openCommandPalette = () => useUIStore.getState().setCommandPaletteOpen(true);
+
+/** Workspace rows reuse the sidebar nav treatment so the rail reads as one list. */
 function workspaceLinkClass(active: boolean) {
-  return cn(
-    "flex items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors",
-    active
-      ? "bg-[var(--accent-soft)] text-[var(--accent)]"
-      : "text-[var(--muted-foreground)] hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]",
-  );
+  return cn("nav-item focusable justify-between", active && "text-[var(--accent)]");
 }
 
 export function AppShell({ user, workspaces, children }: Props) {
@@ -67,8 +68,7 @@ export function AppShell({ user, workspaces, children }: Props) {
     !pathname.startsWith("/settings") &&
     pathname !== "/login";
 
-  const teamRole =
-    teams.find((w) => w.id === activeWorkspaceId)?.role ?? "member";
+  const teamRole = teams.find((w) => w.id === activeWorkspaceId)?.role ?? "member";
 
   useEffect(() => {
     if (activeWorkspaceId) {
@@ -76,72 +76,77 @@ export function AppShell({ user, workspaces, children }: Props) {
     }
   }, [activeWorkspaceId, setActiveWorkspaceId]);
 
-  const navItems: AppNavItem[] = useMemo(() => {
+  /**
+   * Grouped rather than one flat list of eight. The labels are the point: a
+   * reader scanning the rail is looking for a category first, and "Money" vs
+   * "Planning" narrows eight destinations to three or four before they read a
+   * single item.
+   */
+  const groups: AppNavGroup[] = useMemo(() => {
     if (pathname.startsWith("/w/") && activeWorkspaceId) {
-      const items: AppNavItem[] = [
-        {
-          href: `/w/${activeWorkspaceId}`,
-          label: "Dashboard",
-          icon: LayoutDashboard,
-          match: "exact",
-        },
-        {
-          href: `/w/${activeWorkspaceId}/pools`,
-          label: "Budget pools",
-          icon: FolderKanban,
-          match: "prefix",
-        },
-        {
-          href: `/w/${activeWorkspaceId}/expenses`,
-          label: "Expenses",
-          icon: Receipt,
-          match: "prefix",
-        },
+      const base = `/w/${activeWorkspaceId}`;
+      const money: AppNavItem[] = [
+        { href: `${base}/pools`, label: "Budget pools", icon: FolderKanban },
+        { href: `${base}/expenses`, label: "Expenses", icon: Receipt },
       ];
       if (can(teamRole, "expense.decide")) {
-        items.push({
-          href: `/w/${activeWorkspaceId}/approvals`,
-          label: "Approvals",
-          icon: Wallet,
-          match: "prefix",
-        });
+        money.push({ href: `${base}/approvals`, label: "Approvals", icon: Wallet });
       }
-      items.push(
+
+      return [
+        { items: [{ href: base, label: "Dashboard", icon: LayoutDashboard, match: "exact" }] },
+        { label: "Money", items: money },
         {
-          href: `/w/${activeWorkspaceId}/members`,
-          label: "Members",
-          icon: Users,
-          match: "prefix",
+          label: "Workspace",
+          items: [
+            { href: `${base}/members`, label: "Members", icon: Users },
+            { href: `${base}/reports`, label: "Reports", icon: BarChart3 },
+            { href: "/settings", label: "Settings", icon: Settings },
+          ],
         },
-        {
-          href: `/w/${activeWorkspaceId}/reports`,
-          label: "Reports",
-          icon: BarChart3,
-          match: "prefix",
-        },
-      );
-      return items;
+      ];
     }
 
     return [
-      { href: "/home", label: "Dashboard", icon: LayoutDashboard, match: "exact" },
-      { href: "/transactions", label: "Transactions", icon: Receipt, match: "prefix" },
-      { href: "/budgets", label: "Budgets", icon: Wallet, match: "prefix" },
-      { href: "/categories", label: "Categories", icon: Tags, match: "prefix" },
-      { href: "/goals", label: "Goals", icon: Goal, match: "prefix" },
-      { href: "/recurring", label: "Recurring", icon: Repeat, match: "prefix" },
-      { href: "/reports", label: "Reports", icon: BarChart3, match: "prefix" },
+      { items: [{ href: "/home", label: "Dashboard", icon: LayoutDashboard, match: "exact" }] },
+      {
+        label: "Money",
+        items: [
+          { href: "/transactions", label: "Transactions", icon: Receipt },
+          { href: "/budgets", label: "Budgets", icon: Wallet },
+          { href: "/recurring", label: "Recurring", icon: Repeat },
+        ],
+      },
+      {
+        label: "Planning",
+        items: [
+          { href: "/goals", label: "Goals", icon: Goal },
+          { href: "/categories", label: "Categories", icon: Tags },
+          { href: "/reports", label: "Reports", icon: BarChart3 },
+        ],
+      },
+      { label: "Workspace", items: [{ href: "/settings", label: "Settings", icon: Settings }] },
     ];
   }, [activeWorkspaceId, pathname, teamRole]);
 
-  const settingsItem: AppNavItem = {
-    href: "/settings",
-    label: "Settings",
-    icon: Settings,
-    match: "prefix",
-  };
+  /**
+   * Breadcrumb from the nav definition rather than from the URL, so a segment
+   * renders as "Budget pools" instead of "pools" and an id segment does not
+   * leak a mongo ObjectId into the header.
+   */
+  const breadcrumb: Crumb[] = useMemo(() => {
+    const workspaceName =
+      teams.find((w) => w.id === activeWorkspaceId)?.name ?? personal?.name ?? "Ledger";
+    const flat = groups.flatMap((g) => g.items);
+    const match = flat
+      .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
+      // Longest href wins, so /w/:id/pools beats the /w/:id dashboard entry.
+      .sort((a, b) => b.href.length - a.href.length)[0];
 
-  const items = [...navItems, settingsItem];
+    const trail: Crumb[] = [{ label: workspaceName, href: personal ? "/home" : "/" }];
+    if (match) trail.push({ label: match.label, href: match.href });
+    return trail;
+  }, [groups, pathname, teams, personal, activeWorkspaceId]);
 
   return (
     <>
@@ -149,101 +154,72 @@ export function AppShell({ user, workspaces, children }: Props) {
         sidebar={{
           brand: (
             <SidebarBrand
-              logo={
-                <span className="font-mono text-xs font-bold tracking-[0.08em]">
-                  NL
-                </span>
-              }
-              title="Noirly Ledger"
-              subtitle="Finance"
+              logo={<span className="font-mono text-[0.625rem] font-bold tracking-[0.04em]">NL</span>}
+              title="Noirly"
+              subtitle="Ledger"
             />
           ),
           children: (
-            <div className="space-y-4">
-              <button
-                type="button"
-                onClick={() => useUIStore.getState().setCommandPaletteOpen(true)}
-                className="flex w-full items-center justify-between rounded-xl border border-[var(--hairline)] bg-[var(--surface-2)] px-3 py-2 text-left text-sm text-[var(--muted-foreground)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--foreground)]"
-              >
-                <span className="flex items-center gap-2">
-                  <Search size={14} />
-                  Search
-                </span>
-                <span className="font-mono text-[10px]">⌘K</span>
-              </button>
-              <div>
-                <p className="px-1 pb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--muted-foreground)]">
-                  Workspace
-                </p>
-                <ul className="flex flex-col gap-0.5">
-                  {personal ? (
-                    <li>
-                      <Link
-                        href="/home"
-                        className={workspaceLinkClass(
-                          isPersonalRoute || pathname === "/home",
-                        )}
-                      >
-                        <span className="truncate">{personal.name}</span>
-                        <span className="font-mono text-[10px] uppercase tracking-wide opacity-60">
-                          personal
-                        </span>
-                      </Link>
-                    </li>
-                  ) : null}
-                  {teams.map((workspace) => {
-                    const href = `/w/${workspace.id}`;
-                    const active =
-                      activeWorkspaceId === workspace.id &&
-                      pathname.startsWith("/w/");
-                    return (
-                      <li key={workspace.id}>
-                        <Link href={href} className={workspaceLinkClass(active)}>
-                          <span className="truncate">{workspace.name}</span>
-                          <span className="font-mono text-[10px] uppercase tracking-wide opacity-60">
-                            team
-                          </span>
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-                <CreateTeamWorkspace />
-              </div>
+            <div className="flex flex-col gap-1">
+              <p className="nav-group-label pt-1">Workspace</p>
+              {personal ? (
+                <Link
+                  href="/home"
+                  aria-current={
+                    isPersonalRoute || pathname === "/home" ? "page" : undefined
+                  }
+                  className={workspaceLinkClass(isPersonalRoute || pathname === "/home")}
+                >
+                  <span className="truncate">{personal.name}</span>
+                  <span className="meta shrink-0 text-[0.5625rem]">personal</span>
+                </Link>
+              ) : null}
+              {teams.map((workspace) => {
+                const active =
+                  activeWorkspaceId === workspace.id && pathname.startsWith("/w/");
+                return (
+                  <Link
+                    key={workspace.id}
+                    href={`/w/${workspace.id}`}
+                    aria-current={active ? "page" : undefined}
+                    className={workspaceLinkClass(active)}
+                  >
+                    <span className="truncate">{workspace.name}</span>
+                    <span className="meta shrink-0 text-[0.5625rem]">team</span>
+                  </Link>
+                );
+              })}
+              <CreateTeamWorkspace />
             </div>
           ),
-          items,
+          groups,
           footer: (
-            <div className="space-y-3">
-              <div className="hidden md:block">
-                <NotificationBell />
-              </div>
-              <div>
-                <p className="truncate text-sm">{user.displayName}</p>
-                <p className="truncate font-mono text-[11px] text-[var(--muted-foreground)]">
-                  {user.email}
-                </p>
+            <div className="flex items-center gap-2.5">
+              <Avatar name={user.displayName} />
+              <div className="flex min-w-0 flex-1 flex-col leading-tight">
+                <p className="truncate text-[0.8125rem] font-medium">{user.displayName}</p>
+                <p className="meta truncate text-[0.625rem]">{user.email}</p>
               </div>
               <SignOutButton />
             </div>
           ),
         }}
         header={{
-          brand: (
-            <p className="font-display text-sm font-semibold tracking-tight">
-              Ledger
-            </p>
-          ),
+          breadcrumb,
+          brand: <p className="font-display text-sm font-semibold tracking-tight">Ledger</p>,
+          onCommandClick: openCommandPalette,
           actions: (
             <>
               <button
                 type="button"
-                onClick={() => useUIStore.getState().setCommandPaletteOpen(true)}
-                className="rounded-lg border border-[var(--hairline)] px-3 py-1.5 font-mono text-sm text-[var(--muted-foreground)]"
+                onClick={openCommandPalette}
+                aria-label="Quick add"
+                className="focusable inline-flex h-8 w-8 items-center justify-center rounded-[var(--r-sm)] text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--text)] sm:hidden"
               >
-                ⌘K
+                <Plus size={16} />
               </button>
               <NotificationBell />
+              <Avatar name={user.displayName} />
             </>
           ),
         }}

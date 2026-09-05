@@ -36,7 +36,7 @@ export function ExpenseList({ workspaceId }: Props) {
           </span>
         </Link>
       </div>
-      <ul className="mt-6 divide-y divide-[var(--hairline)] overflow-hidden surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)]">
+      <ul className="mt-6 divide-y divide-[var(--hairline)] overflow-hidden surface grain rounded-[var(--r-lg)]">
         {items.map((txn) => (
           <li key={txn.id} className="flex items-center justify-between gap-3 px-4 py-3">
             <div>

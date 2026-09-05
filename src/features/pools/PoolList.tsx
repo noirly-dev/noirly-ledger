@@ -64,7 +64,7 @@ export function PoolList({ workspaceId, baseCurrency }: Props) {
 
       {canManage ? (
         <form
-          className="mt-6 space-y-3 surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-4"
+          className="mt-6 space-y-3 surface grain rounded-[var(--r-lg)] p-4"
           onSubmit={(event) => {
             event.preventDefault();
             create.mutate();
@@ -117,7 +117,7 @@ export function PoolList({ workspaceId, baseCurrency }: Props) {
           <li key={pool.id}>
             <Link
               href={`/w/${workspaceId}/pools/${pool.id}`}
-              className="block surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-4 transition-colors hover:border-[var(--accent)]/40"
+              className="block surface grain rounded-[var(--r-lg)] p-4 surface-interactive"
             >
               <p className="text-sm font-medium text-[var(--foreground)]">{pool.name}</p>
               {pool.description ? (

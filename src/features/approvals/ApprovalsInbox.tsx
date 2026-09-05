@@ -116,7 +116,7 @@ export function ApprovalsInbox({ workspaceId }: Props) {
         {approvals.map((item) => (
           <li
             key={item.id}
-            className="surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-4"
+            className="surface grain rounded-[var(--r-lg)] p-4"
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>

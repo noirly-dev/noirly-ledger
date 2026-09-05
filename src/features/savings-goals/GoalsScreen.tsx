@@ -51,7 +51,7 @@ export function GoalsScreen({ workspaceId, baseCurrency }: Props) {
     <PageContainer size="md">
       <h1 className="text-2xl font-semibold tracking-tight">Savings goals</h1>
       <form
-        className="mt-6 grid gap-3 surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-4 sm:grid-cols-3"
+        className="mt-6 grid gap-3 surface grain rounded-[var(--r-lg)] p-4 sm:grid-cols-3"
         onSubmit={(event) => {
           event.preventDefault();
           create.mutate();
@@ -94,7 +94,7 @@ export function GoalsScreen({ workspaceId, baseCurrency }: Props) {
             ? goal.currentAmountMinor / goal.targetAmountMinor
             : 0;
           return (
-            <li key={goal.id} className="surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-4">
+            <li key={goal.id} className="surface grain rounded-[var(--r-lg)] p-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium">{goal.name}</p>
                 {goal.targetDate ? (

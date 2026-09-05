@@ -61,7 +61,7 @@ export function CommandPalette({ workspaces }: Props) {
         onClick={() => setOpen(false)}
       />
       <div className="relative mx-auto mt-24 w-full max-w-lg px-4">
-        <Command className="overflow-hidden surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] shadow-xl">
+        <Command className="overflow-hidden surface grain rounded-[var(--r-lg)] shadow-xl">
           <Command.Input
             autoFocus
             placeholder="Search or jump…"

@@ -43,7 +43,7 @@ export function PoolDetail({ workspaceId, poolId }: Props) {
       </div>
 
       {pool ? (
-        <div className="mt-6 surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-4">
+        <div className="mt-6 surface grain rounded-[var(--r-lg)] p-4">
           <PoolMeter pool={pool} />
         </div>
       ) : null}
@@ -57,7 +57,7 @@ export function PoolDetail({ workspaceId, poolId }: Props) {
           Submit expense
         </Link>
       </div>
-      <ul className="mt-3 divide-y divide-[var(--hairline)] overflow-hidden surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)]">
+      <ul className="mt-3 divide-y divide-[var(--hairline)] overflow-hidden surface grain rounded-[var(--r-lg)]">
         {items.map((txn) => (
           <li key={txn.id} className="flex items-center justify-between gap-3 px-4 py-3">
             <div>

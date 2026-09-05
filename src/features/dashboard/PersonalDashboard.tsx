@@ -21,7 +21,18 @@ import { formatMinorToMajor } from "@/src/core/money";
 import { MoneyText } from "@/src/components/MoneyText";
 import { ProgressBar } from "@/src/components/ProgressBar";
 import { AccessibleChart } from "@/src/components/AccessibleChart";
-import { Button, PageContainer } from "@noirly-dev/ui";
+import {
+  Button,
+  Card,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  PageContainer,
+  PageHeader,
+  StatCell,
+  StatGroup,
+  Tabs,
+} from "@noirly-dev/ui";
 import { useUIStore } from "@/src/stores/ui-store";
 import { useState } from "react";
 import type { DateRangePreset } from "@/src/core/sync/types";
@@ -40,7 +51,13 @@ const tooltipStyle = {
 };
 
 const chartGridStroke = "var(--hairline)";
-const chartAxisStroke = "var(--muted-foreground)";
+const chartAxisStroke = "var(--text-muted)";
+
+const RANGES: { id: DateRangePreset; label: string }[] = [
+  { id: "7d", label: "7 days" },
+  { id: "30d", label: "30 days" },
+  { id: "mtd", label: "Month to date" },
+];
 
 export function PersonalDashboard({ workspaceId, baseCurrency, displayName }: Props) {
   const [range, setRange] = useState<DateRangePreset>("mtd");
@@ -51,54 +68,49 @@ export function PersonalDashboard({ workspaceId, baseCurrency, displayName }: Pr
   });
   const summary = dash.data?.summary;
 
+  const money = (minor: number) => `${formatMinorToMajor(minor)} ${baseCurrency}`;
+  const net = summary?.netMinor ?? 0;
+  const budgets = summary?.budgets ?? [];
+
   return (
     <PageContainer size="lg">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="font-mono text-[11px] tracking-[0.2em] text-[var(--accent)]">PERSONAL</p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight">Welcome, {displayName}</h1>
-        </div>
-        <div className="flex gap-2">
-          {(["7d", "30d", "mtd"] as const).map((preset) => (
-            <button
-              key={preset}
-              type="button"
-              onClick={() => setRange(preset)}
-              className={`rounded-lg px-3 py-1.5 font-mono text-xs uppercase ${
-                range === preset
-                  ? "bg-[var(--surface)] text-[var(--accent)]"
-                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-              }`}
-            >
-              {preset}
-            </button>
-          ))}
-          <Button onClick={() => setOpen(true)}>Add</Button>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow={`Personal · ${RANGES.find((r) => r.id === range)?.label ?? ""}`}
+        title={`Welcome, ${displayName}`}
+        lead="Where your money went, and what is left of the month."
+        action={<Button onClick={() => setOpen(true)}>Add transaction</Button>}
+        toolbar={
+          <Tabs
+            aria-label="Date range"
+            activeId={range}
+            onSelect={(id) => setRange(id as DateRangePreset)}
+            items={RANGES}
+          />
+        }
+      />
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-3">
-        <Stat
+      <StatGroup className="lg:grid-cols-3">
+        <StatCell
           label="Income"
-          amount={summary?.incomeMinor ?? 0}
-          currency={baseCurrency}
-          tone="positive"
+          value={money(summary?.incomeMinor ?? 0)}
+          trend="up"
+          caption="received in range"
         />
-        <Stat
+        <StatCell
           label="Spending"
-          amount={summary?.expenseMinor ?? 0}
-          currency={baseCurrency}
-          tone="negative"
+          value={money(summary?.expenseMinor ?? 0)}
+          trend="down"
+          caption="spent in range"
         />
-        <Stat
+        <StatCell
           label="Net"
-          amount={summary?.netMinor ?? 0}
-          currency={baseCurrency}
-          tone={(summary?.netMinor ?? 0) >= 0 ? "positive" : "negative"}
+          value={money(net)}
+          trend={net >= 0 ? "up" : "down"}
+          caption={net >= 0 ? "ahead this period" : "behind this period"}
         />
-      </div>
+      </StatGroup>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-5 lg:grid-cols-2">
         <AccessibleChart
           title="Spending by category"
           summary={`${summary?.byCategory.length ?? 0} categories in range`}
@@ -149,86 +161,82 @@ export function PersonalDashboard({ workspaceId, baseCurrency, displayName }: Pr
               <XAxis dataKey="date" stroke={chartAxisStroke} fontSize={10} />
               <YAxis stroke={chartAxisStroke} fontSize={10} />
               <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="expenseMinor" fill="var(--balance-negative)" radius={4} />
+              <Bar dataKey="expenseMinor" fill="var(--negative)" radius={4} />
             </BarChart>
           </ResponsiveContainer>
         </AccessibleChart>
       </div>
 
-      <div className="mt-4">
-        <AccessibleChart
-          title="Net balance trend"
-          summary="Income minus spending per day"
-          columns={[
-            { key: "date", label: "Date" },
-            { key: "net", label: "Net" },
-          ]}
-          rows={(summary?.overTime ?? []).map((row) => ({
-            date: row.date,
-            net: formatMinorToMajor(row.incomeMinor - row.expenseMinor),
-          }))}
-        >
-          <ResponsiveContainer>
-            <LineChart
-              data={(summary?.overTime ?? []).map((row) => ({
-                date: row.date,
-                net: row.incomeMinor - row.expenseMinor,
-              }))}
-            >
-              <CartesianGrid stroke={chartGridStroke} vertical={false} />
-              <XAxis dataKey="date" stroke={chartAxisStroke} fontSize={10} />
-              <YAxis stroke={chartAxisStroke} fontSize={10} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Line type="monotone" dataKey="net" stroke="var(--accent)" strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </AccessibleChart>
-      </div>
+      <AccessibleChart
+        title="Net balance trend"
+        summary="Income minus spending per day"
+        columns={[
+          { key: "date", label: "Date" },
+          { key: "net", label: "Net" },
+        ]}
+        rows={(summary?.overTime ?? []).map((row) => ({
+          date: row.date,
+          net: formatMinorToMajor(row.incomeMinor - row.expenseMinor),
+        }))}
+      >
+        <ResponsiveContainer>
+          <LineChart
+            data={(summary?.overTime ?? []).map((row) => ({
+              date: row.date,
+              net: row.incomeMinor - row.expenseMinor,
+            }))}
+          >
+            <CartesianGrid stroke={chartGridStroke} vertical={false} />
+            <XAxis dataKey="date" stroke={chartAxisStroke} fontSize={10} />
+            <YAxis stroke={chartAxisStroke} fontSize={10} />
+            <Tooltip contentStyle={tooltipStyle} />
+            <Line type="monotone" dataKey="net" stroke="var(--accent)" strokeWidth={2} dot={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </AccessibleChart>
 
-      <section className="mt-6">
-        <h2 className="text-sm font-medium">Budget health</h2>
-        <ul className="mt-3 space-y-3">
-          {(summary?.budgets ?? []).map((row) => {
-            const ratio = row.budget.limitAmountMinor
-              ? row.spentMinor / row.budget.limitAmountMinor
-              : 0;
-            return (
-              <li key={row.budget.id} className="surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-4">
-                <ProgressBar value={ratio} tone={ratio > 1 ? "negative" : "accent"} />
-                <div className="mt-2 flex justify-between text-xs text-[var(--muted-foreground)]">
-                  <span>Spent</span>
-                  <MoneyText
-                    amountMinor={row.remainingMinor}
-                    currency={row.budget.currency}
-                    tone={row.remainingMinor < 0 ? "negative" : "positive"}
-                  />
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle>Budget health</CardTitle>
+        </CardHeader>
+        {budgets.length === 0 ? (
+          <EmptyState
+            title="No budgets yet"
+            description="Set a monthly cap on a category and Ledger will track what is left of it."
+          />
+        ) : (
+          <ul>
+            {budgets.map((row) => {
+              const ratio = row.budget.limitAmountMinor
+                ? row.spentMinor / row.budget.limitAmountMinor
+                : 0;
+              const over = row.remainingMinor < 0;
+              return (
+                <li
+                  key={row.budget.id}
+                  className="flex flex-col gap-2 border-t border-[var(--hairline)] px-5 py-4"
+                >
+                  <div className="flex items-baseline justify-between gap-4">
+                    <span className="text-[0.8125rem] font-medium capitalize">
+                      {row.budget.period}
+                    </span>
+                    <MoneyText
+                      amountMinor={row.remainingMinor}
+                      currency={row.budget.currency}
+                      tone={over ? "negative" : "positive"}
+                      className="text-[0.8125rem]"
+                    />
+                  </div>
+                  <ProgressBar value={ratio} tone={over ? "negative" : "accent"} />
+                  <p className="meta">
+                    {over ? "over budget" : `${Math.round((1 - ratio) * 100)}% left`}
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Card>
     </PageContainer>
-  );
-}
-
-function Stat({
-  label,
-  amount,
-  currency,
-  tone,
-}: {
-  label: string;
-  amount: number;
-  currency: string;
-  tone: "positive" | "negative";
-}) {
-  return (
-    <div className="surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-5">
-      <p className="text-xs text-[var(--muted-foreground)]">{label}</p>
-      <p className="mt-2 text-xl">
-        <MoneyText amountMinor={amount} currency={currency} tone={tone} />
-      </p>
-    </div>
   );
 }

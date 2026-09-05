@@ -60,7 +60,7 @@ export function MembersPanel({ workspaceId, currentUserId, canManage }: Props) {
   return (
     <div className="flex flex-col gap-6">
       {canManage ? (
-        <section className="surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-4">
+        <section className="surface grain rounded-[var(--r-lg)] p-4">
           <h2 className="text-sm font-medium text-[var(--foreground)]">Invite link</h2>
           <p className="mt-1 text-xs text-[var(--muted-foreground)]">
             Copy a one-time link. It expires in 7 days.
@@ -109,7 +109,7 @@ export function MembersPanel({ workspaceId, currentUserId, canManage }: Props) {
         </section>
       ) : null}
 
-      <section className="overflow-hidden surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)]">
+      <section className="overflow-hidden surface grain rounded-[var(--r-lg)]">
         <table className="w-full text-left text-sm">
           <thead className="font-mono text-[10px] uppercase tracking-wide text-[var(--muted-foreground)]">
             <tr className="border-b border-[var(--hairline)]">

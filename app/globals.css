@@ -8,10 +8,13 @@
 /* Lenis owns the document scroller; this sizes it correctly. */
 @import "lenis/dist/lenis.css";
 
+/* Aliases, not values. `--positive` / `--negative` now ship with the theme, so
+   these follow the palette and both schemes instead of being hardcoded for
+   dark mode only. Existing `--balance-*` callers keep working. */
 :root {
-  --balance-positive: #7dd3a8;
-  --balance-negative: #e8a87c;
-  --balance-zero: var(--muted-foreground);
+  --balance-positive: var(--positive);
+  --balance-negative: var(--negative);
+  --balance-zero: var(--text-muted);
 }
 
 .text-perforated {

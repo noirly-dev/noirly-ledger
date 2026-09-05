@@ -47,7 +47,7 @@ export function BudgetScreen({ workspaceId, baseCurrency }: Props) {
     <PageContainer size="md">
       <h1 className="text-2xl font-semibold tracking-tight">Budgets</h1>
       <form
-        className="mt-6 grid gap-3 surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-4 sm:grid-cols-4 sm:items-end"
+        className="mt-6 grid gap-3 surface grain rounded-[var(--r-lg)] p-4 sm:grid-cols-4 sm:items-end"
         onSubmit={(event) => {
           event.preventDefault();
           save.mutate();
@@ -102,7 +102,7 @@ export function BudgetScreen({ workspaceId, baseCurrency }: Props) {
             : 0;
           const over = ratio > 1;
           return (
-            <li key={row.budget.id} className="surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-4">
+            <li key={row.budget.id} className="surface grain rounded-[var(--r-lg)] p-4">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm font-medium">{categoryName(row.budget.categoryId)}</p>
                 <p className="font-mono text-xs uppercase text-[var(--muted-foreground)]">{row.budget.period}</p>

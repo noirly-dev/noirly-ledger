@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Button } from "@noirly-dev/ui";
+import { Button, Card, CardHeader, CardTitle, DataTable } from "@noirly-dev/ui";
 
 type Column = { key: string; label: string };
 type Row = Record<string, string | number>;
@@ -14,49 +14,49 @@ type Props = {
   children: ReactNode;
 };
 
+/**
+ * A chart with a table underneath it for anyone who cannot read the chart.
+ *
+ * The panel is a <Card> now rather than a hand-assembled `surface grain border
+ * shadow-… bg-…` stack. That combination was quietly cancelling itself: the
+ * Tailwind `shadow-*` utility replaces the whole box-shadow, which threw away
+ * the inset hairline and the sheen `.surface` had just drawn, and the explicit
+ * `bg-[var(--surface)]` overrode the card gradient on top of that.
+ */
 export function AccessibleChart({ title, summary, columns, rows, children }: Props) {
   const [table, setTable] = useState(false);
+
   return (
-    <section className="surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-4">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-sm font-medium">{title}</h2>
-          <p className="mt-1 text-xs text-[var(--muted-foreground)]">{summary}</p>
+    <Card>
+      <CardHeader className="flex-row items-start justify-between gap-3">
+        <div className="min-w-0">
+          <CardTitle>{title}</CardTitle>
+          <p className="meta mt-1">{summary}</p>
         </div>
-        <Button variant="ghost" className="h-8 px-3 text-xs" onClick={() => setTable((v) => !v)}>
+        <Button variant="ghost" size="sm" onClick={() => setTable((v) => !v)}>
           {table ? "View chart" : "View as table"}
         </Button>
-      </div>
+      </CardHeader>
+
       {table ? (
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-xs">
-            <thead className="text-[var(--muted-foreground)]">
-              <tr>
-                {columns.map((col) => (
-                  <th key={col.key} className="px-2 py-1 font-medium">
-                    {col.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row, index) => (
-                <tr key={index} className="border-t border-[var(--hairline)]">
-                  {columns.map((col) => (
-                    <td key={col.key} className="px-2 py-1 font-mono tabular-nums">
-                      {row[col.key]}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          caption={title}
+          rows={rows}
+          rowKey={(_, index) => String(index)}
+          columns={columns.map((col, i) => ({
+            id: col.key,
+            header: col.label,
+            // First column identifies the row; the rest are figures.
+            primary: i === 0,
+            numeric: i > 0,
+            cell: (row: Row) => row[col.key],
+          }))}
+        />
       ) : (
-        <div className="h-56" aria-hidden>
+        <div className="h-56 px-5 pb-5" aria-hidden>
           {children}
         </div>
       )}
-    </section>
+    </Card>
   );
 }

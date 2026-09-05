@@ -67,7 +67,7 @@ export function ReportBuilder({ workspaceId, kind }: Props) {
         Export a period as CSV or PDF. Amounts are decimal strings with a currency code.
       </p>
       <form
-        className="mt-6 space-y-4 surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-4"
+        className="mt-6 space-y-4 surface grain rounded-[var(--r-lg)] p-4"
         onSubmit={(event) => {
           event.preventDefault();
           void onExport();

@@ -8,7 +8,7 @@ export default async function SettingsPage() {
   return (
     <PageContainer size="md">
       <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-      <dl className="mt-6 space-y-4 surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-5 text-sm">
+      <dl className="mt-6 space-y-4 surface grain rounded-[var(--r-lg)] p-5 text-sm">
         <div>
           <dt className="text-[var(--muted-foreground)]">Display name</dt>
           <dd className="mt-1 text-[var(--foreground)]">{ctx.displayName}</dd>

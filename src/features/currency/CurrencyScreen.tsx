@@ -41,7 +41,7 @@ export function CurrencyScreen({ workspaceId, baseCurrency }: Props) {
         user-set (how many {baseCurrency} per 1.00 of the quote currency). No live FX feed.
       </p>
       <form
-        className="mt-6 grid gap-3 surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-4 sm:grid-cols-3 sm:items-end"
+        className="mt-6 grid gap-3 surface grain rounded-[var(--r-lg)] p-4 sm:grid-cols-3 sm:items-end"
         onSubmit={(event) => {
           event.preventDefault();
           save.mutate();

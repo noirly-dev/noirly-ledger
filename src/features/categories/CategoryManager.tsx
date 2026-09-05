@@ -36,7 +36,7 @@ export function CategoryManager({ workspaceId }: Props) {
     <PageContainer size="md">
       <h1 className="text-2xl font-semibold tracking-tight">Categories</h1>
       <form
-        className="mt-6 flex flex-col gap-3 surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-4 sm:flex-row sm:items-end"
+        className="mt-6 flex flex-col gap-3 surface grain rounded-[var(--r-lg)] p-4 sm:flex-row sm:items-end"
         onSubmit={(event) => {
           event.preventDefault();
           create.mutate();

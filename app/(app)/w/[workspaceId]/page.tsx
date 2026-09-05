@@ -38,7 +38,7 @@ export default async function WorkspaceHomePage({
           <Link
             key={card.href}
             href={card.href}
-            className="surface grain relative rounded-[var(--r-lg)] border border-[var(--hairline)] shadow-[var(--elev-1)] bg-[var(--surface)] p-5 transition-colors hover:border-[var(--accent)]/40"
+            className="surface grain rounded-[var(--r-lg)] p-5 surface-interactive"
           >
             <p className="text-sm font-medium text-[var(--foreground)]">{card.label}</p>
           </Link>
