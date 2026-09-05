@@ -118,8 +118,10 @@ export function NoirlyLoginButton({ redirectTo = "/home" }: { redirectTo?: strin
     setSignedIn(false);
     signedInRef.current = false;
     setWaiting(true);
+    // Hit the Auth.js route handler, not the HTML popup page — first response
+    // is a 302 to Identity instead of a full app hydrate + client signIn.
     const popup = window.open(
-      `/login/popup?next=${encodeURIComponent(target)}`,
+      `/api/auth/popup?next=${encodeURIComponent(target)}`,
       "noirly-identity",
       popupFeatures(),
     );
@@ -143,7 +145,7 @@ export function NoirlyLoginButton({ redirectTo = "/home" }: { redirectTo?: strin
       setError("Allow popups for Noirly Ledger, then try again.");
       return;
     }
-    const returnTo = `${window.location.origin}/login/popup?next=${encodeURIComponent(target)}`;
+    const returnTo = `${window.location.origin}/api/auth/popup?next=${encodeURIComponent(target)}`;
     const form = document.createElement("form");
     form.method = "POST";
     form.action = `${IDENTITY_URL.replace(/\/$/, "")}/api/auth/google/one-tap`;

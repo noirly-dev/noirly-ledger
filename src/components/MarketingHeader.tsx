@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { Button } from "@noirly-dev/ui";
 import { BrandMark } from "@/src/components/BrandMark";
 import { ThemeControls } from "@/src/components/ThemeControls";
 
@@ -16,12 +15,7 @@ export function MarketingHeader() {
             <span className="meta text-[0.625rem]">Ledger</span>
           </span>
         </Link>
-        <div className="flex items-center gap-2">
-          <ThemeControls />
-          <Button asChild size="sm" variant="ghost">
-            <Link href="/login">Sign in</Link>
-          </Button>
-        </div>
+        <ThemeControls />
       </div>
     </header>
   );

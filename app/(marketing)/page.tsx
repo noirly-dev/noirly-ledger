@@ -31,8 +31,8 @@ const features = [
     copy: "Summaries and exports for a personal ledger or a whole workspace.",
   },
   {
-    title: "One sign-in",
-    copy: "Noirly Identity handles email, Google and verification. No new password.",
+    title: "Noirly Identity",
+    copy: "Email, Google and verification in one account. No new password to remember.",
   },
   {
     title: "Realtime",
@@ -100,20 +100,6 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        {/* Close */}
-        <section className="section-rule relative">
-          <div className="shell section-y">
-            <div className="mx-auto flex max-w-xl flex-col items-center text-center">
-              <h2 className="display-md">Start with this month</h2>
-              <p className="copy mt-4">
-                Sign in with your Noirly account and the first budget takes about a minute.
-              </p>
-              <div className="mt-8 w-full max-w-xs">
-                <NoirlyLoginButton redirectTo="/home" />
-              </div>
-            </div>
-          </div>
-        </section>
       </main>
 
       <footer className="section-rule relative">

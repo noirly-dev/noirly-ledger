@@ -1,36 +1,24 @@
-"use client";
+import { signIn } from "@/auth";
 
-import { Suspense, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
-import { signIn } from "next-auth/react";
-import { LedgerBusyScreen } from "@/src/components/LedgerBusyScreen";
-
-function safeNext(value: string | null): string {
+function safeNext(value?: string | null): string {
   return value && value.startsWith("/") && !value.startsWith("//") ? value : "/home";
 }
 
-function LoginPopupInner() {
-  const params = useSearchParams();
-  const next = safeNext(params.get("next"));
-
-  useEffect(() => {
-    void signIn(
-      "noirly",
-      {
-        redirectTo: `/login/popup-complete?next=${encodeURIComponent(next)}`,
-        callbackUrl: `/login/popup-complete?next=${encodeURIComponent(next)}`,
-      },
-      { display: "popup", prompt: "select_account" },
-    );
-  }, [next]);
-
-  return <LedgerBusyScreen label="Signing in to Ledger" />;
-}
-
-export default function LoginPopupPage() {
-  return (
-    <Suspense fallback={<LedgerBusyScreen label="Signing in to Ledger" />}>
-      <LoginPopupInner />
-    </Suspense>
+/**
+ * Starts the Noirly OIDC dance on the server and 302s straight to Identity.
+ * Kept as a page so Identity One Tap `return_to` and older popup URLs still work
+ * without waiting for client hydration + Auth.js `/providers` + `/csrf` fetches.
+ */
+export default async function LoginPopupPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next } = await searchParams;
+  const dest = safeNext(next);
+  await signIn(
+    "noirly",
+    { redirectTo: `/login/popup-complete?next=${encodeURIComponent(dest)}` },
+    { display: "popup", prompt: "select_account" },
   );
 }
