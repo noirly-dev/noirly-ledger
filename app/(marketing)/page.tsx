@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { Button, Card, CardContent, CardHeader, CardTitle } from "@noirly-dev/ui";
+import { Card, CardContent, CardHeader, CardTitle } from "@noirly-dev/ui";
 import { auth } from "@/auth";
 import { BrandMark } from "@/src/components/BrandMark";
+import { MarketingHeader } from "@/src/components/MarketingHeader";
 import { NoirlyLoginButton } from "@/src/features/auth/NoirlyLoginButton";
 import { ensureLedgerAccount } from "@/src/server/auth/bootstrap";
 
@@ -54,20 +54,7 @@ export default async function LandingPage() {
 
   return (
     <div className="flex min-h-dvh flex-1 flex-col">
-      <header className="sticky top-0 z-20 border-b border-[var(--hairline)] bg-[var(--bg)]/70 backdrop-blur-xl">
-        <div className="shell flex h-16 items-center justify-between gap-6">
-          <Link href="/" className="focusable flex items-center gap-2.5 rounded-[var(--r-sm)]">
-            <BrandMark className="h-8 w-8" />
-            <span className="flex flex-col leading-tight">
-              <span className="font-display text-sm font-semibold tracking-tight">Noirly</span>
-              <span className="meta text-[0.625rem]">Ledger</span>
-            </span>
-          </Link>
-          <Button asChild size="sm" variant="ghost">
-            <Link href="/login">Sign in</Link>
-          </Button>
-        </div>
-      </header>
+      <MarketingHeader />
 
       <main id="main" className="flex flex-1 flex-col">
         {/* Hero */}

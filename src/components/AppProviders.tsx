@@ -2,6 +2,8 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
+import { DEFAULT_THEME_ID } from "@noirly-dev/ui";
+import { ThemeProvider } from "@/src/components/ThemeProvider";
 import { LedgerRealtimeProvider } from "@/src/features/realtime/LedgerRealtimeProvider";
 
 export function AppProviders({ children }: { children: ReactNode }) {
@@ -18,8 +20,10 @@ export function AppProviders({ children }: { children: ReactNode }) {
   );
 
   return (
-    <QueryClientProvider client={client}>
-      <LedgerRealtimeProvider>{children}</LedgerRealtimeProvider>
-    </QueryClientProvider>
+    <ThemeProvider defaultThemeId={DEFAULT_THEME_ID}>
+      <QueryClientProvider client={client}>
+        <LedgerRealtimeProvider>{children}</LedgerRealtimeProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }

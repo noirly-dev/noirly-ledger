@@ -30,6 +30,7 @@ import { CreateTeamWorkspace } from "@/src/features/workspace/CreateTeamWorkspac
 import { CommandPalette } from "@/src/features/command-palette/CommandPalette";
 import { TransactionComposer } from "@/src/features/transactions/TransactionComposer";
 import { NotificationBell } from "@/src/features/notifications/NotificationBell";
+import { ThemeControls } from "@/src/components/ThemeControls";
 import { useUIStore, useWorkspaceStore } from "@/src/stores/ui-store";
 import type { WorkspaceWithRole } from "@/src/core/sync/types";
 import { can } from "@/src/core/permissions/can";
@@ -218,6 +219,7 @@ export function AppShell({ user, workspaces, children }: Props) {
               >
                 <Plus size={16} />
               </button>
+              <ThemeControls size="sm" />
               <NotificationBell />
               <Avatar name={user.displayName} />
             </>
