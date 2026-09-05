@@ -1,9 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
-  <rect width="200" height="200" rx="44" fill="#0E0C08"/>
   <g fill="none" stroke="#C9A44A" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
     <rect x="44" y="62" width="112" height="84" rx="12"/>
     <line x1="44" y1="88" x2="156" y2="88"/>
-    <circle cx="138" cy="118" r="10" fill="#C9A44A" stroke="none"/>
-    <circle cx="138" cy="118" r="4" fill="#0E0C08" stroke="none"/>
+    <path
+      fill="#C9A44A"
+      stroke="none"
+      fill-rule="evenodd"
+      d="M138 108a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 6a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"
+    />
   </g>
 </svg>
