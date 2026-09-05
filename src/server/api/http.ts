@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { Types } from "mongoose";
 import { ZodError } from "zod";
 import { auth } from "@/auth";
@@ -12,7 +13,20 @@ export type LedgerSessionContext = {
   baseCurrency: string;
 };
 
-export async function requireLedgerSession(): Promise<LedgerSessionContext> {
+export type PersonalWorkspaceSummary = {
+  id: string;
+  name: string;
+  slug: string;
+  kind: "personal";
+  baseCurrency: string;
+};
+
+/**
+ * One Mongo bootstrap + provider per request. Layout, pages, and nested
+ * workspace layouts all share this — without it every sidebar hop upserted
+ * the user twice and listed workspaces twice before painting.
+ */
+export const getLedgerProvider = cache(async () => {
   const session = await auth();
   if (!session?.user?.id) {
     throw new ApiError(401, "unauthorized", "Sign in required");
@@ -25,22 +39,31 @@ export async function requireLedgerSession(): Promise<LedgerSessionContext> {
     image: session.user.image,
   });
 
-  return {
+  const ctx: LedgerSessionContext = {
     identitySub: account.user.identitySub,
     userId: account.user.id,
     email: account.user.email,
     displayName: account.user.displayName,
     baseCurrency: account.user.baseCurrency,
   };
-}
 
-export async function getLedgerProvider() {
-  const ctx = await requireLedgerSession();
   return {
     ctx,
     sync: createMongoLedgerProvider({ userId: ctx.userId }),
+    personal: account.personalWorkspace as PersonalWorkspaceSummary,
   };
-}
+});
+
+export const requireLedgerSession = cache(async (): Promise<LedgerSessionContext> => {
+  const { ctx } = await getLedgerProvider();
+  return ctx;
+});
+
+/** Sidebar workspace list — also request-cached so layout is the only caller that pays. */
+export const listSessionWorkspaces = cache(async () => {
+  const { sync } = await getLedgerProvider();
+  return sync.listWorkspaces();
+});
 
 export class ApiError extends Error {
   constructor(

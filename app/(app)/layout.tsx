@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AppShell } from "@/src/components/AppShell";
-import { getLedgerProvider } from "@/src/server/api/http";
+import { listSessionWorkspaces, requireLedgerSession } from "@/src/server/api/http";
 
 export default async function AppGroupLayout({
   children,
@@ -13,8 +13,10 @@ export default async function AppGroupLayout({
     redirect("/login");
   }
 
-  const { ctx, sync } = await getLedgerProvider();
-  const workspaces = await sync.listWorkspaces();
+  const [ctx, workspaces] = await Promise.all([
+    requireLedgerSession(),
+    listSessionWorkspaces(),
+  ]);
 
   return (
     <AppShell

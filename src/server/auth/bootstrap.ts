@@ -56,7 +56,7 @@ async function ensurePersonalWorkspace(
       kind: "personal",
     });
     if (workspace) {
-      await seedSystemCategories(workspace._id);
+      // Categories are seeded at create time. Do not count/seed on every nav hop.
       return workspace;
     }
   }
@@ -87,7 +87,12 @@ async function ensurePersonalWorkspace(
   return workspace;
 }
 
-/** Upsert Ledger user from Identity session and ensure a personal workspace exists. */
+/**
+ * Resolve the Ledger user + personal workspace for an Identity session.
+ *
+ * Hot path is read-only: find the user, reuse the personal workspace, return.
+ * Writes only when the account is missing or profile fields actually changed.
+ */
 export async function ensureLedgerAccount(
   sessionUser: BootstrapSessionUser,
 ): Promise<BootstrappedAccount> {
@@ -100,27 +105,35 @@ export async function ensureLedgerAccount(
       sessionUser.email?.trim().toLowerCase() || `${sessionUser.id}@users.local`;
     const displayName =
       sessionUser.name?.trim() || email.split("@")[0] || "Noirly user";
+    const avatarUrl = sessionUser.image ?? null;
+    const emailVerified = Boolean(sessionUser.email);
 
-    const user = await LedgerUser.findOneAndUpdate(
-      { identitySub: sessionUser.id },
-      {
-        $set: {
-          email,
-          displayName,
-          avatarUrl: sessionUser.image ?? null,
-          emailVerified: Boolean(sessionUser.email),
-        },
-        $setOnInsert: {
-          identitySub: sessionUser.id,
-          baseCurrency: "USD",
-          locale: "en-US",
-        },
-      },
-      { upsert: true, returnDocument: "after" },
-    );
+    let user = await LedgerUser.findOne({ identitySub: sessionUser.id });
 
     if (!user) {
-      throw new Error("Failed to upsert Ledger user");
+      user = await LedgerUser.create({
+        identitySub: sessionUser.id,
+        email,
+        displayName,
+        avatarUrl,
+        emailVerified,
+        baseCurrency: "USD",
+        locale: "en-US",
+      });
+    } else {
+      const needsUpdate =
+        user.email !== email ||
+        user.displayName !== displayName ||
+        (user.avatarUrl ?? null) !== avatarUrl ||
+        user.emailVerified !== emailVerified;
+
+      if (needsUpdate) {
+        user.email = email;
+        user.displayName = displayName;
+        user.avatarUrl = avatarUrl;
+        user.emailVerified = emailVerified;
+        await user.save();
+      }
     }
 
     const workspace = await ensurePersonalWorkspace(user);
