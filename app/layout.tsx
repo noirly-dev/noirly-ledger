@@ -10,17 +10,17 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: "/logo-dark.png",
-        type: "image/png",
-        media: "(prefers-color-scheme: dark)",
-      },
-      {
-        url: "/logo-light.png",
-        type: "image/png",
+        url: "/brand-mark-light.svg",
+        type: "image/svg+xml",
         media: "(prefers-color-scheme: light)",
       },
+      {
+        url: "/brand-mark-dark.svg",
+        type: "image/svg+xml",
+        media: "(prefers-color-scheme: dark)",
+      },
     ],
-    apple: "/logo-dark.png",
+    apple: "/brand-mark-dark.svg",
   },
 };
 
