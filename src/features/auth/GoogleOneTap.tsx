@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type CredentialResponse = { credential?: string };
 
@@ -63,6 +63,7 @@ export function ProductGoogleOneTap({
   onCredential: (input: { credential: string; nonce: string }) => void;
 }) {
   const buttonRef = useRef<HTMLDivElement>(null);
+  const [rendered, setRendered] = useState(false);
   const callbackRef = useRef(onCredential);
   callbackRef.current = onCredential;
 
@@ -104,6 +105,7 @@ export function ProductGoogleOneTap({
             logo_alignment: "left",
             width: buttonRef.current.offsetWidth || 336,
           });
+          setRendered(true);
         }
       })
       .catch(() => undefined);
@@ -112,12 +114,17 @@ export function ProductGoogleOneTap({
     };
   }, [identityUrl]);
 
+  // The slot has to exist in the DOM before Google can render into it, but it
+  // must not reserve height until it does — an empty 40px box plus its caption
+  // left a ~110px hole above the sign-in button whenever Identity has no Google
+  // provider configured, or the provider lookup fails.
   return (
-    <div className="flex flex-col gap-2">
-      <div ref={buttonRef} className="flex min-h-10 w-full justify-center" />
-      <p className="font-mono text-[10px] tracking-[0.12em] uppercase text-[var(--accent-ink)]/50">
-        Google One Tap · pick any account
-      </p>
+    <div className={rendered ? "flex flex-col gap-2" : "contents"}>
+      <div
+        ref={buttonRef}
+        className={rendered ? "flex min-h-10 w-full justify-center" : "hidden"}
+      />
+      {rendered ? <p className="meta text-center">Google One Tap · pick any account</p> : null}
     </div>
   );
 }

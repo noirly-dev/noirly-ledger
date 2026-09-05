@@ -1,9 +1,9 @@
-import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
+import { Button, Card, CardContent, CardHeader, CardTitle } from "@noirly-dev/ui";
 import { auth } from "@/auth";
-import { DotMatrixNumeral } from "@/src/components/DotMatrix";
+import { BrandMark } from "@/src/components/BrandMark";
 import { NoirlyLoginButton } from "@/src/features/auth/NoirlyLoginButton";
 import { ensureLedgerAccount } from "@/src/server/auth/bootstrap";
 
@@ -15,34 +15,28 @@ export const metadata: Metadata = {
 
 const features = [
   {
-    index: "01",
     title: "Budgets",
-    copy: "Track spending against monthly and period limits.",
+    copy: "Set a cap per category and watch what is left of it, period by period.",
   },
   {
-    index: "02",
     title: "Expenses",
-    copy: "Submit, approve, and settle team expenses.",
+    copy: "Submit, approve and settle team spending without a spreadsheet in the middle.",
   },
   {
-    index: "03",
     title: "Pools",
-    copy: "Shared budget pools with live meters.",
+    copy: "Shared budget pools with live meters, so nobody has to ask what is left.",
   },
   {
-    index: "04",
     title: "Reports",
-    copy: "Exports and summaries for personal or team ledgers.",
+    copy: "Summaries and exports for a personal ledger or a whole workspace.",
   },
   {
-    index: "05",
-    title: "Identity",
-    copy: "Sign in once with Noirly Identity — email or Google.",
+    title: "One sign-in",
+    copy: "Noirly Identity handles email, Google and verification. No new password.",
   },
   {
-    index: "06",
     title: "Realtime",
-    copy: "Pool and approval updates as they happen.",
+    copy: "Pool balances and approvals update as they happen, on every open tab.",
   },
 ];
 
@@ -59,158 +53,91 @@ export default async function LandingPage() {
   }
 
   return (
-    <div className="flex min-h-full flex-1 flex-col">
-      <header className="flex items-center justify-between gap-6 border-b border-[var(--hairline)] px-5 py-5 md:px-10">
-        <div className="flex items-center gap-3">
-          <Image
-            src="/logo-light.png"
-            alt=""
-            width={48}
-            height={48}
-            className="h-11 w-11 border border-[var(--hairline)] dark:hidden md:h-12 md:w-12"
-            priority
-          />
-          <Image
-            src="/logo-dark.png"
-            alt=""
-            width={48}
-            height={48}
-            className="hidden h-11 w-11 border border-[var(--hairline)] dark:block md:h-12 md:w-12"
-            priority
-          />
-          <p className="font-display text-lg font-bold tracking-[-0.04em] uppercase md:text-2xl">
-            Noirly Ledger
-          </p>
+    <div className="flex min-h-dvh flex-1 flex-col">
+      <header className="sticky top-0 z-20 border-b border-[var(--hairline)] bg-[var(--bg)]/70 backdrop-blur-xl">
+        <div className="shell flex h-16 items-center justify-between gap-6">
+          <Link href="/" className="focusable flex items-center gap-2.5 rounded-[var(--r-sm)]">
+            <BrandMark className="h-8 w-8" />
+            <span className="flex flex-col leading-tight">
+              <span className="font-display text-sm font-semibold tracking-tight">Noirly</span>
+              <span className="meta text-[0.625rem]">Ledger</span>
+            </span>
+          </Link>
+          <Button asChild size="sm" variant="ghost">
+            <Link href="/login">Sign in</Link>
+          </Button>
         </div>
-        <Link
-          href="/login"
-          className="font-mono text-[11px] font-semibold tracking-[0.16em] uppercase transition-colors hover:bg-[var(--accent)] hover:text-[var(--accent-ink)]"
-        >
-          Sign in
-        </Link>
       </header>
 
-      <div className="flex flex-1 flex-col lg:flex-row">
-        <div className="pointer-events-none hidden w-10 shrink-0 items-center justify-center border-r border-[var(--hairline)] lg:flex">
-          <span className="font-mono text-[10px] font-medium tracking-[0.28em] uppercase [writing-mode:vertical-rl] rotate-180">
-            ledger.noirly.com
-          </span>
-        </div>
-
-        <div className="flex min-w-0 flex-1 flex-col">
-          <section className="relative overflow-hidden px-5 py-12 md:px-12 md:py-20">
-            <div className="mb-8 flex items-center gap-5">
-              <Image
-                src="/logo-light.png"
-                alt=""
-                width={96}
-                height={96}
-                className="h-20 w-20 border border-[var(--hairline)] dark:hidden md:h-24 md:w-24"
-                priority
-              />
-              <Image
-                src="/logo-dark.png"
-                alt=""
-                width={96}
-                height={96}
-                className="hidden h-20 w-20 border border-[var(--hairline)] dark:block md:h-24 md:w-24"
-                priority
-              />
-              <div>
-                <p className="font-mono text-[11px] tracking-[0.22em] uppercase text-[var(--muted-foreground)]">
-                  Finance 1.0
-                </p>
-                <p className="mt-2 font-mono text-[10px] tracking-[0.14em] uppercase text-[var(--muted-foreground)]">
-                  Track. Budget. Settle.
-                </p>
-              </div>
-            </div>
-            <h1 className="text-perforated mt-4 max-w-[10ch] font-display text-[18vw] leading-[0.8] font-bold tracking-[-0.07em] uppercase md:text-[9rem]">
-              Ledger
+      <main id="main" className="flex flex-1 flex-col">
+        {/* Hero */}
+        <section className="shell section-y">
+          <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
+            <BrandMark className="h-20 w-20" />
+            <p className="eyebrow mt-7">Personal &amp; team finance</p>
+            <h1 className="display-lg mt-4 text-balance">
+              Every rupee accounted for, without the spreadsheet.
             </h1>
-            <DotMatrixNumeral className="mt-6 block text-5xl md:text-7xl">
-              1.0
-            </DotMatrixNumeral>
-          </section>
+            <p className="lede mt-5 text-center">
+              Budgets, expenses, shared pools and reports in one ledger — for you alone
+              or for the whole workspace.
+            </p>
 
-          <section className="bg-[var(--accent)] px-5 py-10 text-[var(--accent-ink)] md:px-12 md:py-14">
-            <p className="font-mono text-[11px] tracking-[0.18em] uppercase text-[var(--accent-ink)]/50">
-              Money tracking
-            </p>
-            <p className="mt-4 max-w-2xl font-display text-2xl leading-snug font-medium tracking-[-0.03em] md:text-4xl">
-              Personal and team finance — budgets, expenses, pools, and reports
-              signed in through Noirly Identity.
-            </p>
-            <div className="mt-8 flex max-w-sm flex-col gap-3">
+            <div className="mt-9 w-full max-w-xs">
               <NoirlyLoginButton redirectTo="/home" />
-              <p className="font-mono text-[10px] tracking-[0.12em] uppercase text-[var(--accent-ink)]/50">
-                Opens Identity in a secure popup
+            </div>
+            <p className="meta mt-4">Opens Noirly Identity in a secure popup</p>
+          </div>
+        </section>
+
+        {/* Features */}
+        <section className="section-rule relative">
+          <div className="shell section-y">
+            <div className="mx-auto max-w-2xl text-center">
+              <p className="eyebrow justify-center">What is inside</p>
+              <h2 className="display-md mt-4">Built for the way money actually moves</h2>
+            </div>
+
+            <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {features.map((item) => (
+                <Card key={item.title} variant="interactive">
+                  <CardHeader>
+                    <CardTitle>{item.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="copy">{item.copy}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Close */}
+        <section className="section-rule relative">
+          <div className="shell section-y">
+            <div className="mx-auto flex max-w-xl flex-col items-center text-center">
+              <h2 className="display-md">Start with this month</h2>
+              <p className="copy mt-4">
+                Sign in with your Noirly account and the first budget takes about a minute.
               </p>
-            </div>
-          </section>
-
-          <section className="relative border-t border-[var(--hairline)]">
-            <div className="relative min-h-[200px] w-full bg-[var(--surface)] md:min-h-[280px]">
-              <Image
-                src="/feature-light.png"
-                alt="Noirly Ledger"
-                fill
-                className="object-contain p-8 dark:hidden md:p-12"
-                sizes="100vw"
-                priority
-              />
-              <Image
-                src="/feature-dark.png"
-                alt="Noirly Ledger"
-                fill
-                className="hidden object-contain p-8 dark:block md:p-12"
-                sizes="100vw"
-                priority
-              />
-            </div>
-          </section>
-
-          <section className="grid gap-0 border-t border-[var(--hairline)] md:grid-cols-2 xl:grid-cols-3">
-            {features.map((item) => (
-              <div
-                key={item.index}
-                className="flex min-h-44 flex-col justify-between gap-6 border-b border-r border-[var(--hairline)] px-5 py-8 md:px-8"
-              >
-                <DotMatrixNumeral className="text-3xl">{item.index}</DotMatrixNumeral>
-                <div>
-                  <h2 className="font-display text-xl font-semibold tracking-[-0.03em]">
-                    {item.title}
-                  </h2>
-                  <p className="mt-1 font-mono text-[11px] tracking-[0.08em] uppercase opacity-60">
-                    {item.copy}
-                  </p>
-                </div>
+              <div className="mt-8 w-full max-w-xs">
+                <NoirlyLoginButton redirectTo="/home" />
               </div>
-            ))}
-          </section>
+            </div>
+          </div>
+        </section>
+      </main>
 
-          <footer className="flex flex-wrap items-center justify-between gap-4 border-t border-[var(--hairline)] px-5 py-6 font-mono text-[10px] tracking-[0.16em] uppercase text-[var(--muted-foreground)] md:px-12">
-            <span className="flex items-center gap-3">
-              <Image
-                src="/logo-light.png"
-                alt=""
-                width={28}
-                height={28}
-                className="h-7 w-7 dark:hidden"
-              />
-              <Image
-                src="/logo-dark.png"
-                alt=""
-                width={28}
-                height={28}
-                className="hidden h-7 w-7 dark:block"
-              />
-              Noirly Ledger
-            </span>
-            <span>Budgets / Expenses / Pools</span>
-          </footer>
+      <footer className="section-rule relative">
+        <div className="shell flex flex-wrap items-center justify-between gap-4 py-7">
+          <span className="flex items-center gap-2.5">
+            <BrandMark className="h-6 w-6" />
+            <span className="meta">Noirly Ledger</span>
+          </span>
+          <span className="meta">Budgets · Expenses · Pools · Reports</span>
         </div>
-      </div>
+      </footer>
     </div>
   );
 }

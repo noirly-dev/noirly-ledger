@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Button } from "@noirly-dev/ui";
 import { LedgerBusyScreen } from "@/src/components/LedgerBusyScreen";
 import { ProductGoogleOneTap } from "@/src/features/auth/GoogleOneTap";
 
@@ -179,16 +180,22 @@ export function NoirlyLoginButton({ redirectTo = "/home" }: { redirectTo?: strin
       {mounted ? (
         <ProductGoogleOneTap identityUrl={IDENTITY_URL} onCredential={startGoogleOneTap} />
       ) : null}
-      <button
-        className="flex h-12 w-full cursor-pointer items-center justify-center bg-[var(--accent-ink)] px-5 font-mono text-[11px] font-semibold tracking-[0.16em] text-[var(--accent)] uppercase transition-colors hover:bg-transparent hover:text-[var(--accent-ink)] hover:outline hover:outline-1 hover:outline-dashed hover:outline-[var(--accent-ink)] disabled:cursor-not-allowed disabled:opacity-50"
+      {/* The shared button, not a bespoke one. This was styled in accent-ink on
+          accent for the old landing page's colour slab; with that gone it was
+          the only control in the app that did not match the design system. */}
+      <Button
+        className="w-full"
         type="button"
+        size="lg"
         onClick={openIdentityPopup}
         disabled={waiting}
       >
-        {signedIn ? "Signing in…" : waiting ? "Waiting for Identity…" : "Noirly Login"}
-      </button>
+        {signedIn ? "Signing in…" : waiting ? "Waiting for Identity…" : "Continue with Noirly"}
+      </Button>
       {error ? (
-        <p className="font-mono text-[11px] tracking-[0.08em] text-[var(--accent-ink)]/70">{error}</p>
+        <p className="field-error text-center" role="alert">
+          {error}
+        </p>
       ) : null}
     </div>
   );

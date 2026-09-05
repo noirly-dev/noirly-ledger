@@ -17,29 +17,46 @@
   --balance-zero: var(--text-muted);
 }
 
-.text-perforated {
-  -webkit-text-stroke: 1.25px currentColor;
-  color: color-mix(in srgb, currentColor 22%, transparent);
+/* ==========================================================================
+   Brand mark — <BrandMark>
+   The inlined SVG is tinted with the active accent, so one asset covers all
+   seven palettes in both schemes. `--brand-knockout` is the colour a shape
+   punched out of the mark should show; it defaults to the page background and
+   is overridden by any container that sits on something else.
+   ========================================================================== */
+
+/* Deliberately sets no width or height. This rule is unlayered and Tailwind's
+   utilities live in @layer utilities, and an unlayered declaration beats every
+   layer regardless of specificity — so a size here would silently defeat the
+   `h-20 w-20` a caller passes. The default size is a utility on the component
+   instead, where tailwind-merge lets the caller win. */
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  aspect-ratio: 1 / 1;
+  color: var(--accent);
 }
 
-.matrix-numeral {
-  font-family: var(--font-mono), ui-monospace, monospace;
+.brand-mark-inner,
+.brand-mark-inline {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.brand-mark--fallback {
+  border-radius: var(--r-md);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--hairline);
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 0.6875rem;
   font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.08em;
-  line-height: 0.85;
+  letter-spacing: 0.06em;
 }
 
-.busy-dots {
-  animation: busy-pulse 1.05s ease-in-out infinite;
-}
-
-@keyframes busy-pulse {
-  0%,
-  100% {
-    opacity: 0.2;
-  }
-  50% {
-    opacity: 1;
-  }
+/* Sitting on a panel rather than on the page. */
+.brand-mark--on-surface {
+  --brand-knockout: var(--surface);
 }

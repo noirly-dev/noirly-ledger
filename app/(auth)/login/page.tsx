@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import Image from "next/image";
+import Link from "next/link";
+import { AuthShell } from "@noirly-dev/ui";
+import { BrandMark } from "@/src/components/BrandMark";
 import { NoirlyLoginButton } from "@/src/features/auth/NoirlyLoginButton";
-import { DotMatrixClock } from "@/src/components/DotMatrix";
 
 export const metadata: Metadata = {
   title: "Sign in · Noirly Ledger",
@@ -13,62 +14,29 @@ export default async function LoginPage({
   searchParams: Promise<{ next?: string }>;
 }) {
   const { next } = await searchParams;
+  // Only same-origin paths. `//evil.com` is a valid relative-protocol URL, so
+  // the leading-slash check alone would be an open redirect.
   const redirectTo =
     next && next.startsWith("/") && !next.startsWith("//") ? next : "/home";
 
   return (
-    <div className="flex min-h-full flex-1 flex-col">
-      <header className="flex items-center justify-between border-b border-[var(--hairline)] px-5 py-5 md:px-10">
-        <div className="flex items-center gap-3">
-          <Image
-            src="/logo-light.png"
-            alt=""
-            width={44}
-            height={44}
-            className="h-11 w-11 border border-[var(--hairline)] dark:hidden"
-            priority
-          />
-          <Image
-            src="/logo-dark.png"
-            alt=""
-            width={44}
-            height={44}
-            className="hidden h-11 w-11 border border-[var(--hairline)] dark:block"
-            priority
-          />
-          <p className="font-display text-lg font-bold tracking-[-0.04em] uppercase md:text-2xl">
-            Noirly Ledger
-          </p>
-        </div>
-      </header>
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <div className="pointer-events-none hidden w-10 shrink-0 items-center justify-center border-r border-[var(--hairline)] lg:flex">
-          <span className="font-mono text-[10px] font-medium tracking-[0.28em] uppercase [writing-mode:vertical-rl] rotate-180">
-            Ledger
-          </span>
-        </div>
-        <section className="flex flex-1 flex-col justify-between gap-12 px-5 py-10 md:px-12 md:py-16">
-          <div>
-            <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-[var(--muted-foreground)]">
-              Workspace
-            </p>
-            <h1 className="text-perforated mt-4 font-display text-5xl leading-[0.9] font-bold tracking-[-0.05em] uppercase md:text-7xl">
-              Sign in to Ledger
-            </h1>
-            <p className="mt-6 max-w-md text-base text-[var(--muted-foreground)]">
-              Use your Noirly account. Email, Google, and verification are
-              handled by Noirly Identity.
-            </p>
-          </div>
-          <DotMatrixClock className="text-6xl md:text-8xl" />
-        </section>
-        <section className="flex w-full flex-col justify-center gap-6 bg-[var(--accent)] px-5 py-10 text-[var(--accent-ink)] md:px-12 md:py-16 lg:w-[42%] lg:max-w-xl">
-          <p className="font-mono text-[11px] tracking-[0.18em] uppercase text-[var(--accent-ink)]/55">
-            Continue
-          </p>
-          <NoirlyLoginButton redirectTo={redirectTo} />
-        </section>
+    <AuthShell
+      logo={<BrandMark className="h-14 w-14" />}
+      title="Sign in to Ledger"
+      lead="Email, Google and verification are handled by Noirly Identity. No separate password to remember."
+      footer={
+        <>
+          New here?{" "}
+          <Link href="/" className="text-[var(--accent)] hover:underline">
+            See what Ledger does
+          </Link>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-4">
+        <NoirlyLoginButton redirectTo={redirectTo} />
+        <p className="meta text-center">Opens Identity in a secure popup</p>
       </div>
-    </div>
+    </AuthShell>
   );
 }
